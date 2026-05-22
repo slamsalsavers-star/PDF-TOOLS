@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PDF Splitter Pro</title>
+
+  <!-- ✅ FIXED SCRIPTS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background:#eef2f7;
+      padding:20px;
+    }
+
+    .container {
+      max-width:950px;
+      margin:auto;
+      background:#fff;
+      padding:20px;
+      border-radius:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    button {
+      padding:10px 15px;
+      background:#0078d4;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    }
+
+    input {
+      padding:6px;
+      margin:5px;
+    }
+
+    .page-card {
+      display:flex;
+      align-items:center;
+      gap:15px;
+      margin-top:10px;
+      padding:10px;
+      border:1px solid #ddd;
+      border-radius:6px;
+    }
+
+    canvas {
+      border:1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>PDF Splitter Pro</h2>
+
+  <input type="file" id="pdfFile" accept="application/pdf"><br>
+
+  <!-- ✅ NAMING CONTROLS -->
+  <div>
+    <label>Filename Prefix:</label>
+    <input type="text" id="prefix" placeholder="SOVVSP-">
+
+    <label>Start No (6 digits):</label>
+    <input type="number" id="startNo" placeholder="000001">
+  </div>
+
+  <br>
+  <button id="splitBtn">Split PDF</button>
+
+  <div id="pages"></div>
+</div>
+
+<script>
+
+// ✅ required for PDF preview
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+
+// ✅ ensures 6-digit numbering
+function padNumber(num) {
+  return num.toString().padStart(6, '0');
+}
+
+$(function(){
+
+  $('#splitBtn').click(async function(){
+
+    const file = document.getElementById('pdfFile').files[0];
+    const prefix = document.getElementById('prefix').value || '';
+    let startNo = parseInt(document.getElementById('startNo').value || 0);
+
+    if(!file){
+      alert('Please upload PDF');
+      return;
+    }
+
+    const buffer = await file.arrayBuffer();
+
+    const pdfDoc = await PDFLib.PDFDocument.load(buffer);
+    const previewDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+    $('#pages').html('');
+
+    for(let i = 0; i < pdfDoc.getPageCount(); i++){
+
+      // ✅ split PDF
+      const newPdf = await PDFLib.PDFDocument.create();
+      const [page] = await newPdf.copyPages(pdfDoc, [i]);
+      newPdf.addPage(page);
+
+      const bytes = await newPdf.save();
+      const blob = new Blob([bytes], { type:'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      // ✅ preview thumbnail
+      const pageView = await previewDoc.getPage(i+1);
+      const viewport = pageView.getViewport({ scale: 0.4 });
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await pageView.render({
+        canvasContext: ctx,
+        viewport: viewport
+      }).promise;
+
+      // ✅ AUTO NAMING
+      let fileName = prefix + padNumber(startNo + i);
+
+      const input = document.createElement('input');
+      input.value = fileName;
+
+      // ✅ download
+      const btn = document.createElement('button');
+      btn.innerText = 'Download';
+
+      btn.onclick = function(){
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = input.value + '.pdf';
+        a.click();
+      };
+
+      const card = document.createElement('div');
+      card.className = 'page-card';
+
+      card.appendChild(canvas);
+      card.appendChild(input);
+      card.appendChild(btn);
+
+      document.getElementById('pages').appendChild(card);
+    }
+
+  });
+
+});
+</script>
+
+</body>
+</html>
