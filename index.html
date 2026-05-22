@@ -2,10 +2,132 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0;url=pdf-splitterv3.html" />
-  <title>Redirecting to PDF Splitter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Tools Hub</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0d1f44 0%, #1a3262 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+    }
+    .page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px;
+    }
+    .hero {
+      max-width: 920px;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 4vw, 4.25rem);
+      margin: 0;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    .hero p {
+      margin: 24px auto 0;
+      max-width: 720px;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #dbeafe;
+    }
+    .tools-grid {
+      width: 100%;
+      max-width: 1000px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .tool-card {
+      background: rgba(15, 48, 85, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 24px 70px rgba(8, 18, 43, 0.24);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .tool-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(96, 165, 250, 0.4);
+    }
+    .tool-card h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.45rem;
+      letter-spacing: -0.02em;
+    }
+    .tool-card p {
+      margin: 0;
+      line-height: 1.7;
+      color: #cbd5e1;
+    }
+    .tool-card a,
+    .tool-card .status {
+      display: inline-flex;
+      margin-top: 20px;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .button {
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      opacity: 0.95;
+    }
+    .status {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      color: #dbeafe;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+  </style>
 </head>
 <body>
-  <p>Redirecting to <a href="pdf-splitterv3.html">PDF Splitter</a>...</p>
+  <div class="page">
+    <section class="hero">
+      <h1>Welcome to PDF Tools Hub</h1>
+      <p>Manage your PDF workflows in one polished web app. Start by splitting PDFs with the first tool, and stay tuned for the upcoming PDF merger that will let you combine multiple files effortlessly.</p>
+    </section>
+
+    <div class="tools-grid">
+      <article class="tool-card">
+        <h2>PDF Splitter</h2>
+        <p>Select a PDF, choose the pages or ranges you want to extract, and download split output instantly.</p>
+        <a class="button" href="pdf-splitterv3.html">Open PDF Splitter</a>
+      </article>
+
+      <article class="tool-card">
+        <h2>PDF Merger</h2>
+        <p>Coming soon: upload multiple PDFs and merge them into one single document with a clean and simple interface.</p>
+        <span class="status">Planned</span>
+      </article>
+    </div>
+
+    <div class="footer">
+      <p>Need help? Open the PDF Splitter first to verify the available tools, then return here to explore the future merger feature.</p>
+    </div>
+  </div>
 </body>
 </html>
