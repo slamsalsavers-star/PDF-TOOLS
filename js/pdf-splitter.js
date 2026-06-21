@@ -1,417 +1,470 @@
-/* PDF Splitter page script extracted from html */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
 const state = {
-  pdfBytes: null,
   pdfDoc: null,
   previewDoc: null,
   pageCount: 0,
   splitResults: [],
 };
 
-function padNumber(num) {
-  return num.toString().padStart(6, '0');
-}
+// ── Utilities ──────────────────────────────────────────────────────────────
 
-function updateStatus(message) {
-  $('#status').text(message);
-}
+function pad(n) { return n.toString().padStart(6, '0'); }
+
+function ensurePdf(name) { return name.endsWith('.pdf') ? name : `${name}.pdf`; }
 
 function getStartNumber() {
-  const value = parseInt($('#startNo').val(), 10);
-  return Number.isFinite(value) && value >= 1 ? value : 1;
+  const v = parseInt($('#startNo').val(), 10);
+  return Number.isFinite(v) && v >= 1 ? v : 1;
 }
 
 function buildFileName(pageIndex) {
-  const prefix = $('#prefix').val().trim();
-  return `${prefix}${padNumber(getStartNumber() + pageIndex)}`;
-}
-
-function setControls(enabled) {
-  $('#selectAllBtn').prop('disabled', !enabled);
-  $('#deselectAllBtn').prop('disabled', !enabled);
-  $('#splitBtn').prop('disabled', !enabled);
-  $('#downloadZipBtn').prop('disabled', !enabled);
-  $('#clearBtn').prop('disabled', !enabled);
-}
-
-function parseRangeGroups(value) {
-  if (!value) return [];
-  const groups = [];
-  const parts = value.split(',').map((part) => part.trim()).filter(Boolean);
-  for (const part of parts) {
-    const rangeMatch = /^\s*(\d+)\s*-\s*(\d+)\s*$/.exec(part);
-    if (rangeMatch) {
-      let start = parseInt(rangeMatch[1], 10);
-      let end = parseInt(rangeMatch[2], 10);
-      if (start > end) [start, end] = [end, start];
-      const group = [];
-      for (let x = start; x <= end; x += 1) {
-        if (x >= 1 && x <= state.pageCount) {
-          group.push(x - 1);
-        }
-      }
-      if (group.length) groups.push(group);
-    } else {
-      const valueIndex = parseInt(part, 10);
-      if (!Number.isNaN(valueIndex) && valueIndex >= 1 && valueIndex <= state.pageCount) {
-        groups.push([valueIndex - 1]);
-      }
-    }
-  }
-  return groups;
-}
-
-function selectAllItems() {
-  $('#pages .page-select, #rangeGroups .group-select').prop('checked', true);
-}
-
-function deselectAllItems() {
-  $('#pages .page-select, #rangeGroups .group-select').prop('checked', false);
+  return `${$('#prefix').val().trim()}${pad(getStartNumber() + pageIndex)}`;
 }
 
 function buildGroupFileName(pageIndexes) {
   const prefix = $('#prefix').val().trim();
   if (!pageIndexes.length) return `${prefix}group`;
-  const start = pageIndexes[0] + 1;
-  const end = pageIndexes[pageIndexes.length - 1] + 1;
-  return pageIndexes.length === 1
-    ? `${prefix}${padNumber(start)}`
-    : `${prefix}${padNumber(start)}-${padNumber(end)}`;
+  const s = pageIndexes[0] + 1;
+  const e = pageIndexes[pageIndexes.length - 1] + 1;
+  return pageIndexes.length === 1 ? `${prefix}${pad(s)}` : `${prefix}${pad(s)}-${pad(e)}`;
 }
 
-function getRangeGroups() {
-  const rangeText = $('#rangeInput').val().trim();
-  if (!rangeText) return [];
-  return parseRangeGroups(rangeText);
+function setControls(on) {
+  ['#selectAllBtn', '#deselectAllBtn', '#splitBtn', '#downloadZipBtn', '#clearBtn']
+    .forEach(sel => $(sel).prop('disabled', !on));
 }
 
-function buildSplitGroups() {
-  const rangeGroups = getRangeGroups();
-  if (rangeGroups.length) {
-    return rangeGroups;
-  }
-  const selectedIndexes = getSelectedPageIndexes();
-  return selectedIndexes.map((pageIndex) => [pageIndex]);
+function setStatus(msg, type = '') {
+  $('#statusBar').removeClass('is-loading is-success is-error').addClass(type ? `is-${type}` : '');
+  $('#statusText').text(msg);
 }
 
-function createGroupCard(pageIndexes, groupIndex) {
-  const label = pageIndexes.length > 1
-    ? `Range ${pageIndexes[0] + 1}-${pageIndexes[pageIndexes.length - 1] + 1}`
-    : `Page ${pageIndexes[0] + 1}`;
-  const wrapper = $('<div>').addClass('group-card').attr('data-group-index', groupIndex);
+function setProgress(pct) {
+  if (pct == null) { $('#progressWrap').hide(); $('#progressBar').css('width', '0%'); }
+  else             { $('#progressWrap').show(); $('#progressBar').css('width', `${pct}%`); }
+}
 
-  const initialName = buildGroupFileName(pageIndexes);
-  const header = $('<div>').addClass('group-card-header');
-  const checkbox = $('<input type="checkbox" class="group-select" checked />');
-  const title = $('<span>').text(label);
-  header.append(checkbox, title);
-  wrapper.append(header);
+function showToast(msg, type = 'info', ms = 3500) {
+  const t = $(`<div class="toast toast-${type}">${msg}</div>`);
+  $('#toast-root').append(t);
+  setTimeout(() => t.fadeOut(280, function () { $(this).remove(); }), ms);
+}
 
-  const info = $('<div>').addClass('meta');
-  info.append($('<div>').addClass('page-info').append(
-    $('<span>').text(`${pageIndexes.length} page(s)`),
-    $('<span>').text(`Output: ${initialName}.pdf`)
-  ));
+// ── Range Parsing ──────────────────────────────────────────────────────────
 
-  const nameLabel = $('<label>').text('Group filename');
-  const nameInput = $('<input type="text" class="group-name" />').val(initialName);
-  info.append(nameLabel, nameInput);
-
-  const downloadButton = $('<button>').addClass('secondary').text('Download Group');
-  downloadButton.on('click', function () {
-    const result = state.splitResults[groupIndex];
-    if (!result) return;
-    const currentName = nameInput.val().trim() || initialName;
-    result.fileName = currentName.endsWith('.pdf') ? currentName : `${currentName}.pdf`;
-    downloadBlob(result.blob, result.fileName);
-  });
-  nameInput.on('input', function () {
-    const currentName = $(this).val().trim() || initialName;
-    const finalName = currentName.endsWith('.pdf') ? currentName : `${currentName}.pdf`;
-    if (state.splitResults[groupIndex]) {
-      state.splitResults[groupIndex].fileName = finalName;
+function parseRangeGroups(value) {
+  if (!value) return [];
+  const groups = [];
+  for (const part of value.split(',').map(s => s.trim()).filter(Boolean)) {
+    const m = /^(\d+)\s*-\s*(\d+)$/.exec(part);
+    if (m) {
+      let s = parseInt(m[1], 10), e = parseInt(m[2], 10);
+      if (s > e) [s, e] = [e, s];
+      const g = [];
+      for (let x = s; x <= e; x++) if (x >= 1 && x <= state.pageCount) g.push(x - 1);
+      if (g.length) groups.push(g);
+    } else {
+      const v = parseInt(part, 10);
+      if (!Number.isNaN(v) && v >= 1 && v <= state.pageCount) groups.push([v - 1]);
     }
-    wrapper.find('.page-info span:last-child').text(`Output: ${finalName}`);
-  });
-
-  const filenameRow = $('<div>').addClass('filename-row');
-  filenameRow.append(nameInput, downloadButton);
-  info.append(nameLabel, filenameRow);
-
-  wrapper.append(info);
-  return wrapper;
-}
-
-function showSplitGroups(groups) {
-  $('#rangeGroups').empty();
-  if (!groups.length) return;
-  $('#rangeGroups').append($('<h3>').text('Split Groups'));
-  groups.forEach((group, index) => {
-    $('#rangeGroups').append(createGroupCard(group, index));
-  });
-}
-
-async function renderPreviewCanvas(pageIndex, scale) {
-  const canvas = document.getElementById('previewCanvas');
-  const page = await state.previewDoc.getPage(pageIndex + 1);
-  const viewport = page.getViewport({ scale });
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  canvas.style.width = `${viewport.width}px`;
-  canvas.style.height = `${viewport.height}px`;
-  const context = canvas.getContext('2d');
-  await page.render({ canvasContext: context, viewport }).promise;
-}
-
-let previewScale = 1;
-let previewPageIndex = null;
-
-async function openPreview(pageIndex) {
-  previewPageIndex = pageIndex;
-  previewScale = 1;
-  $('#previewTitle').text(`Preview page ${pageIndex + 1}`);
-  $('#zoomLevel').text(`${Math.round(previewScale * 100)}%`);
-  await renderPreviewCanvas(pageIndex, previewScale);
-  $('#previewModal').removeClass('hidden');
-
-  const previewCanvasElement = document.getElementById('previewCanvas');
-  if (previewCanvasElement) {
-    previewCanvasElement.onwheel = async function (event) {
-      event.preventDefault();
-      const delta = event.deltaY < 0 ? 0.1 : -0.1;
-      await changePreviewScale(delta);
-    };
   }
+  return groups;
 }
 
-async function changePreviewScale(delta) {
-  if (previewPageIndex === null) return;
-  previewScale = Math.max(0.4, Math.min(3, previewScale + delta));
-  $('#zoomLevel').text(`${Math.round(previewScale * 100)}%`);
-  await renderPreviewCanvas(previewPageIndex, previewScale);
+function getRangeGroups() { return parseRangeGroups($('#rangeInput').val().trim()); }
+
+// ── Selection ──────────────────────────────────────────────────────────────
+
+function selectAllItems() {
+  $('#pages .page-check').prop('checked', true);
+  $('#rangeGroups .group-select').prop('checked', true);
+  $('#pages .page-card').addClass('is-selected');
+  $('#rangeGroups .group-card').addClass('is-checked');
 }
 
-function closePreview() {
-  $('#previewModal').addClass('hidden');
-  previewPageIndex = null;
-}
-
-function createPageCard(pageIndex) {
-  const pageNumber = pageIndex + 1;
-  const wrapper = $('<div>').addClass('page-card').attr('data-page-index', pageIndex);
-
-  const thumb = $('<div>').addClass('thumb');
-  const canvas = document.createElement('canvas');
-  const checkbox = $('<input type="checkbox" class="page-select" checked />');
-  const title = $('<span>').text(`Page ${pageNumber}`);
-
-  thumb.append(checkbox, title, canvas);
-
-  const meta = $('<div>').addClass('meta');
-  const pageInfo = $('<div>').addClass('page-info').append(
-    $('<span>').text(`#${pageNumber}`),
-    $('<span>').text('Selected')
-  );
-  const label = $('<label>').text('Output filename');
-  const input = $('<input type="text" class="page-name" />').val(buildFileName(pageIndex));
-  meta.append(pageInfo, label, input);
-
-  const downloadButton = $('<button>').addClass('secondary').text('Download Page');
-
-  downloadButton.on('click', async function () {
-    const name = input.val().trim() || buildFileName(pageIndex);
-    const result = await splitPage(pageIndex, name + '.pdf');
-    downloadBlob(result.blob, result.fileName);
-  });
-
-  const filenameRow = $('<div>').addClass('filename-row');
-  filenameRow.append(input, downloadButton);
-
-  canvas.addEventListener('click', () => openPreview(pageIndex));
-  title.on('click', () => openPreview(pageIndex));
-
-  meta.append(label, filenameRow);
-  wrapper.append(thumb, meta);
-  return wrapper;
-}
-
-async function renderThumbnail(pageIndex, canvas) {
-  const page = await state.previewDoc.getPage(pageIndex + 1);
-  const viewport = page.getViewport({ scale: 0.5 });
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  const context = canvas.getContext('2d');
-
-  await page.render({ canvasContext: context, viewport }).promise;
-}
-
-async function loadPdf() {
-  const file = $('#pdfFile')[0].files[0];
-  if (!file) { alert('Please choose a PDF file first.'); return; }
-
-  updateStatus('Loading PDF...');
-  const arrayBuffer = await file.arrayBuffer();
-  state.pdfBytes = arrayBuffer;
-  state.pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-  state.previewDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  state.pageCount = state.pdfDoc.getPageCount();
-  state.splitResults = [];
-
-  $('#pages').empty();
-
-  for (let i = 0; i < state.pageCount; i += 1) {
-    const card = createPageCard(i);
-    $('#pages').append(card);
-    await renderThumbnail(i, card.find('canvas')[0]);
-  }
-
-  $('#rangeGroups').empty();
-  updateStatus(`Loaded ${state.pageCount} pages. Choose pages and click Split.`);
-  setControls(true);
+function deselectAllItems() {
+  $('#pages .page-check').prop('checked', false);
+  $('#rangeGroups .group-select').prop('checked', false);
+  $('#pages .page-card').removeClass('is-selected');
+  $('#rangeGroups .group-card').removeClass('is-checked');
 }
 
 function getSelectedPageIndexes() {
-  const selected = [];
+  const out = [];
   $('#pages .page-card').each(function () {
-    const item = $(this);
-    const index = parseInt(item.attr('data-page-index'), 10);
-    if (item.find('.page-select').prop('checked')) {
-      selected.push(index);
-    }
+    if ($(this).find('.page-check').prop('checked'))
+      out.push(parseInt($(this).attr('data-page-index'), 10));
   });
-  return selected;
+  return out;
 }
 
-async function splitPage(pageIndex, fileName) {
-  const newPdf = await PDFLib.PDFDocument.create();
-  const [page] = await newPdf.copyPages(state.pdfDoc, [pageIndex]);
-  newPdf.addPage(page);
+// ── PDF Operations ─────────────────────────────────────────────────────────
 
-  const bytes = await newPdf.save();
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  return { blob, fileName };
+async function splitPage(pageIndex, fileName) {
+  const doc = await PDFLib.PDFDocument.create();
+  const [p] = await doc.copyPages(state.pdfDoc, [pageIndex]);
+  doc.addPage(p);
+  const bytes = await doc.save();
+  return { blob: new Blob([bytes], { type: 'application/pdf' }), fileName };
 }
 
 async function mergePages(pageIndexes, fileName) {
-  const newPdf = await PDFLib.PDFDocument.create();
-  const pages = await newPdf.copyPages(state.pdfDoc, pageIndexes);
-  for (const page of pages) { newPdf.addPage(page); }
-  const bytes = await newPdf.save();
+  const doc = await PDFLib.PDFDocument.create();
+  const pages = await doc.copyPages(state.pdfDoc, pageIndexes);
+  pages.forEach(p => doc.addPage(p));
+  const bytes = await doc.save();
   return { blob: new Blob([bytes], { type: 'application/pdf' }), fileName };
 }
 
 async function splitPages(pageIndexes) {
   const results = [];
-  for (const pageIndex of pageIndexes) {
-    const card = $(`#pages .page-card[data-page-index='${pageIndex}']`);
-    const fileName = card.find('.page-name').val().trim() || buildFileName(pageIndex);
-    const result = await splitPage(pageIndex, fileName + '.pdf');
-    results.push(result);
+  for (const idx of pageIndexes) {
+    const card = $(`#pages .page-card[data-page-index='${idx}']`);
+    const raw  = card.find('.page-name-input').val().trim() || buildFileName(idx);
+    results.push(await splitPage(idx, ensurePdf(raw)));
   }
   return results;
 }
 
+function buildSplitGroups() {
+  const rg = getRangeGroups();
+  if (rg.length) return rg;
+  return getSelectedPageIndexes().map(i => [i]);
+}
+
+// ── Download ───────────────────────────────────────────────────────────────
+
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function downloadZip() {
   const zip = new JSZip();
-
   const rangeGroups = getRangeGroups();
+
   if (rangeGroups.length) {
-    for (let index = 0; index < rangeGroups.length; index += 1) {
-      const groupPages = rangeGroups[index];
-      const defaultName = buildGroupFileName(groupPages) + '.pdf';
-      const card = $(`#rangeGroups .group-card[data-group-index='${index}']`);
-      const customName = card.find('.group-name').val().trim();
-      const isChecked = card.find('.group-select').prop('checked');
-      if (!card.length || isChecked) {
-        const fileName = customName ? (customName.endsWith('.pdf') ? customName : `${customName}.pdf`) : defaultName;
-        const result = await mergePages(groupPages, fileName);
-        zip.file(result.fileName, result.blob);
-      }
+    // Range mode — one ZIP entry per range group, no individual pages
+    for (let i = 0; i < rangeGroups.length; i++) {
+      const card    = $(`#rangeGroups .group-card[data-group-index='${i}']`);
+      const checked = !card.length || card.find('.group-select').prop('checked');
+      if (!checked) continue;
+      const fallback = ensurePdf(buildGroupFileName(rangeGroups[i]));
+      const custom   = card.find('.group-name').val().trim();
+      const result   = await mergePages(rangeGroups[i], custom ? ensurePdf(custom) : fallback);
+      zip.file(result.fileName, result.blob);
     }
   } else if (state.splitResults.length) {
-    state.splitResults.forEach((item, index) => {
-      const groupCard = $(`#rangeGroups .group-card[data-group-index='${index}']`);
-      if (!groupCard.length || groupCard.find('.group-select').prop('checked')) {
-        const currentName = groupCard.find('.group-name').val().trim() || item.fileName;
-        item.fileName = currentName.endsWith('.pdf') ? currentName : `${currentName}.pdf`;
-        zip.file(item.fileName, item.blob);
-      }
+    // Pre-split results mode — use cached blobs
+    state.splitResults.forEach((item, i) => {
+      const card    = $(`#rangeGroups .group-card[data-group-index='${i}']`);
+      const checked = !card.length || card.find('.group-select').prop('checked');
+      if (!checked) return;
+      const custom  = card.find('.group-name').val().trim();
+      item.fileName = custom ? ensurePdf(custom) : item.fileName;
+      zip.file(item.fileName, item.blob);
     });
-  }
-
-  const selectedPageIndexes = getSelectedPageIndexes();
-  if (selectedPageIndexes.length) {
-    const pageResults = await splitPages(selectedPageIndexes);
-    for (const result of pageResults) { zip.file(result.fileName, result.blob); }
+  } else {
+    // Individual page mode
+    const selected = getSelectedPageIndexes();
+    if (selected.length) {
+      const results = await splitPages(selected);
+      results.forEach(r => zip.file(r.fileName, r.blob));
+    }
   }
 
   if (Object.keys(zip.files).length === 0) {
-    alert('No selected pages or split groups available for ZIP. Select pages or set a split range first.');
+    showToast('Nothing to download. Select pages or set a split range.', 'warning');
     return;
   }
 
-  updateStatus('Generating ZIP...');
+  setStatus('Generating ZIP…', 'loading');
   const content = await zip.generateAsync({ type: 'blob' });
   saveAs(content, 'pdf-split-results.zip');
-  updateStatus('ZIP downloaded.');
+  const count = Object.keys(zip.files).length;
+  setStatus(`ZIP downloaded — ${count} file(s).`, 'success');
+  showToast('ZIP downloaded successfully.', 'success');
 }
 
-$('#loadBtn').on('click', loadPdf);
-$('#zoomInBtn').on('click', async function () { await changePreviewScale(0.2); });
-$('#zoomOutBtn').on('click', async function () { await changePreviewScale(-0.2); });
-$('#closePreviewBtn').on('click', closePreview);
-$('#previewModal').on('click', function (event) { if (event.target.id === 'previewModal') { closePreview(); } });
+// ── Group Cards ────────────────────────────────────────────────────────────
+
+function createGroupCard(pageIndexes, groupIndex) {
+  const label       = pageIndexes.length > 1
+    ? `Pages ${pageIndexes[0] + 1}–${pageIndexes[pageIndexes.length - 1] + 1}`
+    : `Page ${pageIndexes[0] + 1}`;
+  const initialName = buildGroupFileName(pageIndexes);
+
+  const wrapper  = $('<div>').addClass('group-card is-checked').attr('data-group-index', groupIndex);
+  const checkbox = $('<input type="checkbox" class="group-select" checked />');
+  checkbox.on('change', function () { wrapper.toggleClass('is-checked', this.checked); });
+
+  const meta = $('<div>').addClass('group-meta');
+  meta.append(
+    $('<div>').addClass('group-title').text(label),
+    $('<div>').addClass('group-sub').text(`${pageIndexes.length} page(s)  ·  Output: ${ensurePdf(initialName)}`)
+  );
+
+  const nameInput = $('<input type="text" class="input group-name" />').val(initialName);
+  nameInput.on('input', function () {
+    const fin = ensurePdf($(this).val().trim() || initialName);
+    if (state.splitResults[groupIndex]) state.splitResults[groupIndex].fileName = fin;
+    wrapper.find('.group-sub').text(`${pageIndexes.length} page(s)  ·  Output: ${fin}`);
+  });
+
+  const dlBtn = $('<button>').addClass('btn btn-success btn-sm').html(
+    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Download`
+  );
+  dlBtn.on('click', async function () {
+    const result = state.splitResults[groupIndex];
+    if (!result) { showToast('Click Split first.', 'warning'); return; }
+    result.fileName = ensurePdf(nameInput.val().trim() || initialName);
+    downloadBlob(result.blob, result.fileName);
+  });
+
+  meta.append($('<div>').addClass('name-row').append(nameInput));
+  wrapper.append(checkbox, meta, $('<div>').addClass('group-actions').append(dlBtn));
+  return wrapper;
+}
+
+function showSplitGroups(groups) {
+  $('#rangeGroups').empty();
+  if (!groups.length) { $('#rangeGroupsWrap').hide(); return; }
+  groups.forEach((g, i) => $('#rangeGroups').append(createGroupCard(g, i)));
+  $('#rangeGroupsWrap').show();
+}
+
+// ── Page Cards ─────────────────────────────────────────────────────────────
+
+function createPageCard(pageIndex) {
+  const wrapper   = $('<div>').addClass('page-card is-selected').attr('data-page-index', pageIndex);
+  const thumbWrap = $('<div>').addClass('thumb-wrap');
+  const canvas    = document.createElement('canvas');
+  const overlay   = $('<div>').addClass('thumb-overlay').html(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  );
+  thumbWrap.append(canvas, overlay).on('click', () => openPreview(pageIndex));
+
+  const body      = $('<div>').addClass('card-body');
+  const header    = $('<div>').addClass('card-header');
+  const check     = $('<input type="checkbox" class="page-check" checked />');
+  check.on('change', function () { wrapper.toggleClass('is-selected', this.checked); });
+  header.append($('<span>').addClass('page-label').text(`Page ${pageIndex + 1}`), check);
+
+  const nameInput = $('<input type="text" class="page-name-input" />').val(buildFileName(pageIndex));
+
+  const dlBtn = $('<button>').addClass('btn btn-ghost btn-sm').html(
+    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Download`
+  );
+  dlBtn.on('click', async function (e) {
+    e.stopPropagation();
+    const result = await splitPage(pageIndex, ensurePdf(nameInput.val().trim() || buildFileName(pageIndex)));
+    downloadBlob(result.blob, result.fileName);
+  });
+
+  body.append(header, nameInput, $('<div>').addClass('card-footer').append(dlBtn));
+  wrapper.append(thumbWrap, body);
+  return wrapper;
+}
+
+// ── Preview ────────────────────────────────────────────────────────────────
+
+let previewScale     = 1.5;
+let previewPageIndex = null;
+
+async function renderPreviewCanvas(pageIndex, scale) {
+  const canvas   = document.getElementById('previewCanvas');
+  const page     = await state.previewDoc.getPage(pageIndex + 1);
+  const viewport = page.getViewport({ scale });
+  canvas.width  = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+}
+
+async function openPreview(pageIndex) {
+  previewPageIndex = pageIndex;
+  previewScale     = 1.5;
+  $('#previewTitle').text(`Page ${pageIndex + 1} of ${state.pageCount}`);
+  $('#zoomLevel').text(`${Math.round(previewScale * 100)}%`);
+  await renderPreviewCanvas(pageIndex, previewScale);
+  $('#previewModal').removeClass('hidden');
+
+  document.getElementById('previewCanvas').onwheel = async function (e) {
+    e.preventDefault();
+    await changePreviewScale(e.deltaY < 0 ? 0.15 : -0.15);
+  };
+}
+
+async function changePreviewScale(delta) {
+  if (previewPageIndex === null) return;
+  previewScale = Math.max(0.3, Math.min(4, previewScale + delta));
+  $('#zoomLevel').text(`${Math.round(previewScale * 100)}%`);
+  await renderPreviewCanvas(previewPageIndex, previewScale);
+}
+
+async function navigatePreview(delta) {
+  if (previewPageIndex === null) return;
+  const next = previewPageIndex + delta;
+  if (next < 0 || next >= state.pageCount) return;
+  previewPageIndex = next;
+  $('#previewTitle').text(`Page ${previewPageIndex + 1} of ${state.pageCount}`);
+  await renderPreviewCanvas(previewPageIndex, previewScale);
+}
+
+function closePreview() {
+  $('#previewModal').addClass('hidden');
+  document.getElementById('previewCanvas').onwheel = null;
+  previewPageIndex = null;
+}
+
+// ── Thumbnails ─────────────────────────────────────────────────────────────
+
+async function renderThumbnail(pageIndex, canvas) {
+  const page     = await state.previewDoc.getPage(pageIndex + 1);
+  const viewport = page.getViewport({ scale: 0.6 });
+  canvas.width  = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+}
+
+// ── Load PDF ───────────────────────────────────────────────────────────────
+
+async function loadPdf() {
+  const file = document.getElementById('pdfFile').files[0];
+  if (!file) { showToast('Please choose a PDF file first.', 'warning'); return; }
+
+  if (state.previewDoc) { state.previewDoc.destroy(); state.previewDoc = null; }
+
+  setStatus('Loading PDF…', 'loading');
+  setProgress(0);
+  state.splitResults = [];
+
+  try {
+    const buf        = await file.arrayBuffer();
+    state.pdfDoc     = await PDFLib.PDFDocument.load(buf);
+    state.previewDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+    state.pageCount  = state.pdfDoc.getPageCount();
+  } catch (_) {
+    setStatus('Failed to load PDF — the file may be corrupt or password-protected.', 'error');
+    setProgress(null);
+    showToast('Error loading PDF.', 'error');
+    return;
+  }
+
+  $('#pages').empty();
+  $('#rangeGroups').empty();
+  $('#rangeGroupsWrap').hide();
+  $('#pagesWrap').show();
+  $('#emptyState').hide();
+
+  for (let i = 0; i < state.pageCount; i++) {
+    const card = createPageCard(i);
+    $('#pages').append(card);
+    await renderThumbnail(i, card.find('canvas')[0]);
+    setProgress(Math.round(((i + 1) / state.pageCount) * 100));
+  }
+
+  setProgress(null);
+  setStatus(`Loaded ${state.pageCount} page(s) from "${file.name}". Select pages or set a range, then click Split.`, 'success');
+  setControls(true);
+}
+
+// ── Run Split ──────────────────────────────────────────────────────────────
 
 async function runSplitGroups() {
   const groups = buildSplitGroups();
-  if (!groups.length) { alert('Enter a valid range or select pages to split.'); return false; }
+  if (!groups.length) {
+    showToast('Enter a valid range or select at least one page.', 'warning');
+    return false;
+  }
+
   $('#rangeGroups').empty();
-  updateStatus('Preparing split groups...');
+  setStatus('Preparing split groups…', 'loading');
   state.splitResults = [];
+
   for (const pageIndexes of groups) {
-    const result = await mergePages(pageIndexes, buildGroupFileName(pageIndexes) + '.pdf');
+    const result = await mergePages(pageIndexes, ensurePdf(buildGroupFileName(pageIndexes)));
     state.splitResults.push(result);
   }
+
   showSplitGroups(groups);
-  updateStatus(`Created ${state.splitResults.length} split group(s). Download individually or ZIP them.`);
+  setStatus(`${state.splitResults.length} group(s) ready. Download individually or as a ZIP.`, 'success');
+  showToast(`${state.splitResults.length} group(s) ready.`, 'success');
   return true;
 }
 
-$('#splitBtn').on('click', async function () { await runSplitGroups(); });
+// ── Upload Zone ────────────────────────────────────────────────────────────
 
-$('#selectAllBtn').on('click', function () { selectAllItems(); });
-$('#deselectAllBtn').on('click', function () { deselectAllItems(); });
+const uploadZone   = document.getElementById('uploadZone');
+const pdfFileInput = document.getElementById('pdfFile');
+
+uploadZone.addEventListener('click', () => pdfFileInput.click());
+pdfFileInput.addEventListener('change', () => {
+  const f = pdfFileInput.files[0];
+  if (f) $('#chosenFileName').text(f.name);
+});
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault(); uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') {
+    const dt = new DataTransfer(); dt.items.add(f);
+    pdfFileInput.files = dt.files;
+    $('#chosenFileName').text(f.name);
+  } else {
+    showToast('Please drop a PDF file.', 'warning');
+  }
+});
+
+// ── Event Wiring ───────────────────────────────────────────────────────────
+
+$('#loadBtn').on('click', loadPdf);
+$('#splitBtn').on('click', () => runSplitGroups());
+$('#selectAllBtn').on('click', selectAllItems);
+$('#deselectAllBtn').on('click', deselectAllItems);
 
 $('#downloadZipBtn').on('click', async function () {
   if (!state.splitResults.length && !getSelectedPageIndexes().length) {
-    const confirmSplit = confirm('No split output ready yet. Run Split now?');
-    if (confirmSplit) {
-      const didSplit = await runSplitGroups();
-      if (!didSplit) { return; }
-    } else { return; }
+    if (!confirm('No split output ready. Run Split now?')) return;
+    if (!(await runSplitGroups())) return;
   }
   await downloadZip();
 });
 
 $('#clearBtn').on('click', function () {
-  $('#pdfFile').val('');
+  if (state.previewDoc) { state.previewDoc.destroy(); }
+  pdfFileInput.value = '';
+  $('#chosenFileName').text('');
+  $('#rangeInput').val('');
   $('#pages').empty();
-  updateStatus('Load a PDF to begin.');
+  $('#rangeGroups').empty();
+  $('#rangeGroupsWrap').hide();
+  $('#pagesWrap').hide();
+  $('#emptyState').show();
+  setStatus('Load a PDF to begin.');
+  setProgress(null);
   setControls(false);
-  state.pdfBytes = null;
-  state.pdfDoc = null;
-  state.previewDoc = null;
-  state.pageCount = 0;
-  state.splitResults = [];
+  Object.assign(state, { pdfDoc: null, previewDoc: null, pageCount: 0, splitResults: [] });
+});
+
+$('#zoomInBtn').on('click',   () => changePreviewScale(0.2));
+$('#zoomOutBtn').on('click',  () => changePreviewScale(-0.2));
+$('#prevPageBtn').on('click', () => navigatePreview(-1));
+$('#nextPageBtn').on('click', () => navigatePreview(1));
+$('#closePreviewBtn').on('click', closePreview);
+$('#previewModal').on('click', function (e) { if (e.target.id === 'previewModal') closePreview(); });
+
+document.addEventListener('keydown', async e => {
+  if ($('#previewModal').hasClass('hidden')) return;
+  if (e.key === 'Escape')     { closePreview(); return; }
+  if (e.key === 'ArrowRight') await navigatePreview(1);
+  if (e.key === 'ArrowLeft')  await navigatePreview(-1);
+  if (e.key === '+')          await changePreviewScale(0.2);
+  if (e.key === '-')          await changePreviewScale(-0.2);
 });

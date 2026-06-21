@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF Splitter Pro — PDF Tools Hub</title>
+  <link rel="stylesheet" href="css/pdf-splitter.css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <header class="app-header">
+    <div>
+      <h1>PDF Splitter Pro</h1>
+      <p>Split, merge, and download PDF pages — entirely in your browser.</p>
+    </div>
+    <a href="index.html" class="back-link">← Back to Hub</a>
+  </header>
+
+  <div class="card">
+    <!-- Upload -->
+    <div class="section">
+      <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
+      <div class="upload-zone" id="uploadZone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h3>Drop your PDF here</h3>
+        <p>or click to browse</p>
+        <div class="chosen-file" id="chosenFileName"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="section">
+      <div class="toolbar">
+        <div class="field-row">
+          <label for="prefix">Prefix</label>
+          <input type="text" id="prefix" class="input w-32" placeholder="SOVVSP-" />
+        </div>
+        <div class="field-row">
+          <label for="startNo">Start&nbsp;#</label>
+          <input type="number" id="startNo" class="input w-20" placeholder="1" min="1" />
+        </div>
+        <div class="toolbar-sep"></div>
+        <div class="field-row">
+          <label for="rangeInput">Range</label>
+          <input type="text" id="rangeInput" class="input w-48" placeholder="e.g. 1-3, 5, 7-9" />
+        </div>
+        <div class="toolbar-sep"></div>
+        <button id="loadBtn" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Load PDF
+        </button>
+        <button id="splitBtn" class="btn btn-primary" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 5l14 14M19 5L5 19" stroke-linecap="round"/></svg>
+          Split
+        </button>
+        <button id="downloadZipBtn" class="btn btn-success" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download ZIP
+        </button>
+      </div>
+    </div>
+
+    <!-- Selection + Clear -->
+    <div class="section">
+      <div class="toolbar">
+        <button id="selectAllBtn" class="btn btn-ghost btn-sm" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Select All
+        </button>
+        <button id="deselectAllBtn" class="btn btn-ghost btn-sm" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
+          Deselect All
+        </button>
+        <span style="flex:1"></span>
+        <button id="clearBtn" class="btn btn-danger btn-sm" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress + Status -->
+    <div class="section">
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status-bar" id="statusBar">
+        <div class="status-dot"></div>
+        <span id="statusText">Load a PDF to begin.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Split Groups -->
+  <div id="rangeGroupsWrap" style="display:none">
+    <div class="card">
+      <div class="section">
+        <div class="section-label">Split Groups</div>
+        <div class="group-grid" id="rangeGroups"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pages -->
+  <div id="pagesWrap" style="display:none">
+    <div class="card">
+      <div class="section">
+        <div class="section-label">Pages</div>
+        <div class="page-grid" id="pages"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p>No PDF loaded — drop a file above or click to browse.</p>
+  </div>
+
+</div>
+
+<!-- Toasts -->
+<div id="toast-root"></div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="previewTitle">Page Preview</h3>
+      <button id="closePreviewBtn" class="btn btn-ghost btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
+        Close
+      </button>
+    </div>
+    <div class="modal-scroll">
+      <canvas id="previewCanvas"></canvas>
+    </div>
+    <div class="modal-foot">
+      <div class="zoom-row">
+        <button id="zoomOutBtn" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14" stroke-linecap="round"/></svg>
+          Zoom Out
+        </button>
+        <span class="zoom-label" id="zoomLevel">100%</span>
+        <button id="zoomInBtn" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+          Zoom In
+        </button>
+      </div>
+      <div class="zoom-row">
+        <button id="prevPageBtn" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Prev
+        </button>
+        <button id="nextPageBtn" class="btn btn-ghost btn-sm">
+          Next
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <span class="modal-hint">Scroll to zoom · ← → to navigate · Esc to close</span>
+    </div>
+  </div>
+</div>
+
+<script src="js/pdf-splitter.js" defer></script>
+</body>
+</html>
