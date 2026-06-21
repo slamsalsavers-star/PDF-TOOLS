@@ -3,75 +3,223 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF Tools Hub</title>
+  <title>PDF Tools Hub — Free Browser-Based PDF Utilities</title>
   <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
+
+  <!-- NAV -->
   <nav class="site-nav">
     <div class="nav-inner">
-      <a class="brand" href="index.html">PDF Tools Hub</a>
+      <a class="brand" href="index.html">
+        <svg class="brand-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#2563eb"/>
+          <path d="M9 8h9l5 5v11H9V8z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M18 8v5h5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 17h8M12 20h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        PDF Tools Hub
+      </a>
       <div class="nav-links">
-        <a href="index.html">Home</a>
         <a href="#tools">Tools</a>
-        <a href="#feedback">Share Feedback</a>
+        <a href="#feedback" class="nav-cta">Give Feedback</a>
       </div>
     </div>
   </nav>
 
-  <div class="page">
-    <section class="hero">
-      <h1>Welcome to PDF Tools Hub</h1>
-      <p>Manage your PDF workflows entirely in your browser. Split PDFs into individual pages or ranges, or merge multiple PDFs into one — no uploads to any server, no accounts required.</p>
-      <p class="privacy-note">This app runs entirely in your browser. We do not collect data or store any uploaded files.</p>
-    </section>
-
-    <div id="tools" class="tools-grid">
-      <article class="tool-card">
-        <h2>PDF Splitter</h2>
-        <p>Select a PDF, choose the pages or ranges you want to extract, and download split output instantly.</p>
-        <a class="button" href="pdf-splitter.html">Open PDF Splitter</a>
-      </article>
-
-      <article class="tool-card">
-        <h2>PDF Merger</h2>
-        <p>Upload multiple PDFs, drag to reorder them, and download a single merged document — all in your browser.</p>
-        <a class="button" href="pdf-merger.html">Open PDF Merger</a>
-      </article>
-    </div>
-
-    <section id="feedback" class="feedback-section">
-      <div class="feedback-header">
-        <h2>Share your idea</h2>
-        <p>Suggest new tool features or request improvements for existing PDF tools. Your feedback is emailed directly to slamsalsavers@gmail.com.</p>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        100% Private — Runs entirely in your browser
       </div>
-
-      <form id="feedbackForm" class="feedback-form" action="https://formsubmit.co/slamsalsavers@gmail.com" method="POST">
-        <div class="form-group">
-          <label for="userEmail">Your email</label>
-          <input id="userEmail" name="email" type="email" placeholder="you@example.com" required />
+      <h1>PDF Tools That<br><span class="hero-accent">Respect Your Privacy</span></h1>
+      <p class="hero-sub">Split, merge, and manage your PDFs instantly — no uploads, no accounts, no data ever leaves your device.</p>
+      <div class="hero-actions">
+        <a href="#tools" class="btn btn-primary">Explore Tools</a>
+        <a href="#feedback" class="btn btn-ghost">Request a Feature</a>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="pdf-stack">
+        <div class="pdf-card pdf-card-1">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#2563eb" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>document.pdf</span>
         </div>
-
-        <div class="form-group">
-          <label for="suggestionText">Suggestion</label>
-          <textarea id="suggestionText" name="message" placeholder="Describe your idea or change request" required></textarea>
+        <div class="pdf-card pdf-card-2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#60a5fa" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>report.pdf</span>
         </div>
-
-        <input type="hidden" name="_subject" value="PDF Tools Suggestion" />
-        <input type="hidden" name="_cc" value="slamsalsavers@gmail.com" />
-        <input type="hidden" name="_autoresponse" value="Thank you for your suggestion! We will review it shortly." />
-        <input type="hidden" name="_captcha" value="false" />
-
-        <div class="feedback-submit">
-          <button class="button" type="submit">Send Suggestion</button>
+        <div class="pdf-card pdf-card-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#93c5fd" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#93c5fd" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>contract.pdf</span>
         </div>
-        <div id="feedbackStatus" class="status-message"></div>
-      </form>
-    </section>
+        <div class="merge-arrow">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="pdf-card pdf-result">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#2563eb" fill-opacity="0.1" stroke="#2563eb" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>merged.pdf</span>
+          <span class="pdf-check">&#10003;</span>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <div class="footer">
-      <p>Need help? Try the PDF Splitter to extract pages, or the PDF Merger to combine multiple files into one.</p>
+  <!-- TRUST STRIP -->
+  <div class="trust-strip">
+    <div class="trust-inner">
+      <div class="trust-item">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        No file uploads
+      </div>
+      <div class="trust-dot"></div>
+      <div class="trust-item">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        No account required
+      </div>
+      <div class="trust-dot"></div>
+      <div class="trust-item">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Completely free
+      </div>
+      <div class="trust-dot"></div>
+      <div class="trust-item">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Zero data collected
+      </div>
     </div>
   </div>
+
+  <!-- TOOLS -->
+  <section id="tools" class="tools-section">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>Available Tools</h2>
+        <p>Pick the PDF tool you need and get started instantly — no waiting, no loading.</p>
+      </div>
+      <div class="tools-grid">
+
+        <article class="tool-card">
+          <div class="tool-icon tool-icon-blue">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 14l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-label">Split</div>
+            <h3>PDF Splitter</h3>
+            <p>Extract individual pages or custom page ranges from any PDF. Download results instantly, one file at a time.</p>
+          </div>
+          <a class="btn btn-primary tool-btn" href="pdf-splitter.html">Open Splitter &rarr;</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon tool-icon-violet">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 10l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-label">Merge</div>
+            <h3>PDF Merger</h3>
+            <p>Combine multiple PDFs into one document. Drag to reorder files, then download your merged PDF in seconds.</p>
+          </div>
+          <a class="btn btn-primary tool-btn" href="pdf-merger.html">Open Merger &rarr;</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon tool-icon-emerald">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 13h5M8 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="17" r="3" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 17h3M17 15.5v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-label">Edit</div>
+            <h3>PDF Editor</h3>
+            <p>Annotate any PDF with text, highlights, freehand drawings, and shapes. Download your edited file instantly.</p>
+          </div>
+          <a class="btn btn-primary tool-btn" href="pdf-editor.html">Open Editor &rarr;</a>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FEEDBACK -->
+  <section id="feedback" class="feedback-section">
+    <div class="section-inner">
+      <div class="feedback-layout">
+        <div class="feedback-copy">
+          <div class="section-label">Feedback</div>
+          <h2>Have an idea?</h2>
+          <p>Suggest a new tool or improvement. All feedback goes straight to the developer — no middlemen, no ticket queues.</p>
+          <ul class="feedback-perks">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.8"/></svg>
+              PDF compression
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.8"/></svg>
+              PDF to image export
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.8"/></svg>
+              Page reordering
+            </li>
+          </ul>
+        </div>
+
+        <form id="feedbackForm" class="feedback-form" action="https://formsubmit.co/slamsalsavers@gmail.com" method="POST">
+          <div class="form-group">
+            <label for="userEmail">Your email</label>
+            <input id="userEmail" name="email" type="email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label for="suggestionText">Your suggestion</label>
+            <textarea id="suggestionText" name="message" placeholder="Describe your idea or the improvement you'd like to see..." required></textarea>
+          </div>
+
+          <input type="hidden" name="_subject" value="PDF Tools Suggestion" />
+          <input type="hidden" name="_cc" value="slamsalsavers@gmail.com" />
+          <input type="hidden" name="_autoresponse" value="Thank you for your suggestion! We will review it shortly." />
+          <input type="hidden" name="_captcha" value="false" />
+
+          <button class="btn btn-primary" type="submit">Send Suggestion</button>
+          <div id="feedbackStatus" class="status-message"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="index.html">
+          <svg class="brand-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#2563eb"/>
+            <path d="M9 8h9l5 5v11H9V8z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M18 8v5h5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 17h8M12 20h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          PDF Tools Hub
+        </a>
+        <p>Free, private PDF utilities that run entirely in your browser.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <span class="footer-col-title">Tools</span>
+          <a href="pdf-splitter.html">PDF Splitter</a>
+          <a href="pdf-merger.html">PDF Merger</a>
+          <a href="pdf-editor.html">PDF Editor</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">Site</span>
+          <a href="index.html">Home</a>
+          <a href="#feedback">Give Feedback</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>No data is stored, shared, or uploaded. Your files stay on your device.</p>
+    </div>
+  </footer>
 
   <script src="js/main.js" defer></script>
 </body>
