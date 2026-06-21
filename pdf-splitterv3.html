@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Santo PDF Splitter Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF Splitter Pro</title>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
@@ -10,68 +11,973 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-  <link rel="stylesheet" href="css/pdf-splitter.css">
-</head>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #0f172a;
+      --text-2: #334155;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --primary-light: #ede9fe;
+      --success: #059669;
+      --success-dark: #047857;
+      --success-light: #d1fae5;
+      --danger: #dc2626;
+      --danger-dark: #b91c1c;
+      --warning: #d97706;
+      --radius-sm: 6px;
+      --radius: 10px;
+      --radius-lg: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 25px rgba(15,23,42,0.12);
+      --shadow-xl: 0 24px 60px rgba(15,23,42,0.22);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 28px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .app { max-width: 1060px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .app-header { margin-bottom: 22px; }
+    .app-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+    .app-header p { color: var(--text-muted); margin-top: 3px; font-size: 13px; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .section { padding: 18px 22px; }
+    .section + .section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Upload Zone ── */
+    .upload-zone {
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.18s, background 0.18s;
+      background: var(--surface-alt);
+      user-select: none;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .upload-zone svg { width: 40px; height: 40px; margin: 0 auto 10px; color: var(--text-muted); display: block; transition: color 0.18s; }
+    .upload-zone:hover svg, .upload-zone.drag-over svg { color: var(--primary); }
+    .upload-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+    .upload-zone p { color: var(--text-muted); font-size: 13px; }
+    .upload-zone .chosen-file { margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--primary); }
+
+    /* ── Toolbar ── */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .toolbar-sep { width: 1px; height: 26px; background: var(--border-strong); margin: 0 2px; flex-shrink: 0; }
+
+    .field-row { display: flex; align-items: center; gap: 7px; }
+    .field-row label { font-size: 13px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+
+    .input {
+      padding: 7px 11px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+    .w-20 { width: 80px; }
+    .w-32 { width: 128px; }
+    .w-48 { width: 192px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 13px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, opacity 0.15s, box-shadow 0.15s;
+      outline: none;
+      line-height: 1;
+    }
+    .btn:focus-visible { box-shadow: 0 0 0 3px rgba(79,70,229,0.3); }
+    .btn svg { flex-shrink: 0; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: var(--success-dark); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover  { background: var(--danger-dark); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-2);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-ghost:hover { background: var(--surface-alt); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    /* ── Progress ── */
+    .progress-wrap { height: 3px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+    .progress-bar  { height: 100%; background: var(--primary); border-radius: 999px; transition: width 0.15s ease; width: 0%; }
+
+    /* ── Status ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border-radius: var(--radius);
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-2);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+    .status-bar.is-loading .status-dot { background: var(--primary); animation: blink 1s infinite; }
+    .status-bar.is-success .status-dot { background: var(--success); }
+    .status-bar.is-error   .status-dot { background: var(--danger); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ── Group Cards ── */
+    .group-grid { display: grid; gap: 10px; }
+
+    .group-card {
+      display: grid;
+      grid-template-columns: 20px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      transition: border-color 0.15s;
+    }
+    .group-card.is-checked { background: #eff6ff; border-color: #bfdbfe; }
+
+    .group-card input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; cursor: pointer; }
+
+    .group-meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .group-title { font-size: 13px; font-weight: 700; }
+    .group-sub   { font-size: 12px; color: var(--text-muted); }
+
+    .name-row { display: flex; gap: 6px; align-items: center; }
+    .name-row .input { flex: 1; min-width: 0; padding: 5px 9px; font-size: 12px; }
+
+    .group-actions { display: flex; gap: 6px; }
+
+    /* ── Page Grid ── */
+    .page-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .page-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .page-card.is-selected { border-color: var(--primary); }
+    .page-card:hover { border-color: var(--primary); }
+
+    .thumb-wrap {
+      position: relative;
+      background: var(--surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 130px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .thumb-wrap canvas { max-width: 100%; max-height: 112px; border-radius: 3px; display: block; }
+    .thumb-overlay {
+      position: absolute; inset: 0;
+      background: rgba(79,70,229,0.55);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .thumb-wrap:hover .thumb-overlay { opacity: 1; }
+    .thumb-overlay svg { color: #fff; width: 26px; height: 26px; }
+
+    .card-body { padding: 9px 10px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+    .page-label  { font-size: 12px; font-weight: 700; }
+    .page-check  { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
+
+    .page-name-input {
+      width: 100%;
+      padding: 5px 8px;
+      font-size: 11px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      outline: none;
+      background: var(--surface-alt);
+      color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .page-name-input:focus { border-color: var(--primary); background: #fff; }
+
+    .card-footer { margin-top: 8px; }
+    .card-footer .btn { width: 100%; justify-content: center; }
+
+    /* ── Empty State ── */
+    .empty-state { text-align: center; padding: 56px 24px; color: var(--text-muted); }
+    .empty-state svg { width: 44px; height: 44px; margin: 0 auto 12px; opacity: 0.35; display: block; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Toast ── */
+    #toast-root {
+      position: fixed; bottom: 22px; right: 22px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 9999; pointer-events: none;
+    }
+    .toast {
+      padding: 11px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      font-size: 13px; font-weight: 500;
+      max-width: 340px;
+      pointer-events: auto;
+      animation: toast-in 0.22s ease;
+    }
+    @keyframes toast-in { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .toast-info    { background: #1e293b; color: #fff; }
+    .toast-success { background: var(--success); color: #fff; }
+    .toast-error   { background: var(--danger);  color: #fff; }
+    .toast-warning { background: var(--warning);  color: #fff; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,0.72);
+      backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal-box {
+      width: min(95vw, 900px);
+      max-height: 92vh;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-xl);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-head h3 { font-size: 14px; font-weight: 700; }
+    .modal-scroll {
+      flex: 1; overflow: auto;
+      background: #1e293b;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 20px;
+    }
+    .modal-scroll canvas { border-radius: 6px; display: block; }
+    .modal-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 18px; border-top: 1px solid var(--border);
+      flex-shrink: 0; gap: 12px;
+    }
+    .zoom-row { display: flex; align-items: center; gap: 8px; }
+    .zoom-label { font-size: 13px; font-weight: 600; min-width: 46px; text-align: center; }
+    .modal-hint { font-size: 12px; color: var(--text-muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .page-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+      .group-card { grid-template-columns: 20px 1fr; }
+      .group-actions { grid-column: 1/-1; }
+      .toolbar-sep { display: none; }
+    }
+  </style>
+</head>
 <body>
-<nav class="site-nav">
-  <div class="nav-inner">
-    <a class="brand" href="index.html">PDF Tools Hub</a>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="pdf-splitterv3.html">Tools</a>
-      <a href="index.html#feedback">Share Feedback</a>
+<div class="app">
+
+  <header class="app-header">
+    <h1>PDF Splitter Pro</h1>
+    <p>Split, merge, and download PDF pages — entirely in your browser.</p>
+  </header>
+
+  <div class="card">
+    <!-- Upload -->
+    <div class="section">
+      <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
+      <div class="upload-zone" id="uploadZone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h3>Drop your PDF here</h3>
+        <p>or click to browse</p>
+        <div class="chosen-file" id="chosenFileName"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="section">
+      <div class="toolbar">
+        <div class="field-row">
+          <label for="prefix">Prefix</label>
+          <input type="text" id="prefix" class="input w-32" placeholder="SOVVSP-" />
+        </div>
+        <div class="field-row">
+          <label for="startNo">Start&nbsp;#</label>
+          <input type="number" id="startNo" class="input w-20" placeholder="1" min="1" />
+        </div>
+        <div class="toolbar-sep"></div>
+        <div class="field-row">
+          <label for="rangeInput">Range</label>
+          <input type="text" id="rangeInput" class="input w-48" placeholder="e.g. 1-3, 5, 7-9" />
+        </div>
+        <div class="toolbar-sep"></div>
+        <button id="loadBtn" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Load PDF
+        </button>
+        <button id="splitBtn" class="btn btn-primary" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 5l14 14M19 5L5 19" stroke-linecap="round"/></svg>
+          Split
+        </button>
+        <button id="downloadZipBtn" class="btn btn-success" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download ZIP
+        </button>
+      </div>
+    </div>
+
+    <!-- Selection + Clear -->
+    <div class="section">
+      <div class="toolbar">
+        <button id="selectAllBtn" class="btn btn-ghost btn-sm" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Select All
+        </button>
+        <button id="deselectAllBtn" class="btn btn-ghost btn-sm" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
+          Deselect All
+        </button>
+        <span style="flex:1"></span>
+        <button id="clearBtn" class="btn btn-danger btn-sm" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress + Status -->
+    <div class="section">
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status-bar" id="statusBar">
+        <div class="status-dot"></div>
+        <span id="statusText">Load a PDF to begin.</span>
+      </div>
     </div>
   </div>
-</nav>
-<div class="container">
-  <h2>Santo PDF Splitter Pro</h2>
 
-  <div class="controls">
-    <label for="pdfFile">Choose PDF</label>
-    <input type="file" id="pdfFile" accept="application/pdf" />
-
-    <label for="prefix">Filename Prefix</label>
-    <input type="text" id="prefix" placeholder="SOVVSP-" />
-
-    <label for="startNo">Start Number</label>
-    <input type="number" id="startNo" placeholder="1" min="1" />
+  <!-- Split Groups -->
+  <div id="rangeGroupsWrap" style="display:none">
+    <div class="card">
+      <div class="section">
+        <div class="section-label">Split Groups</div>
+        <div class="group-grid" id="rangeGroups"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="actions">
-    <button id="loadBtn" class="primary">Load PDF</button>
-    <label for="rangeInput">Split Range</label>
-    <input type="text" id="rangeInput" placeholder="1-3,5,7-9" />
-    <button id="selectAllBtn" class="secondary" disabled>Select All</button>
-    <button id="deselectAllBtn" class="secondary" disabled>Deselect All</button>
-    <button id="splitBtn" class="secondary" disabled>Split</button>
-    <button id="downloadZipBtn" class="primary" disabled>Download All as ZIP</button>
-    <button id="clearBtn" class="danger" disabled>Clear</button>
+  <!-- Pages -->
+  <div id="pagesWrap" style="display:none">
+    <div class="card">
+      <div class="section">
+        <div class="section-label">Pages</div>
+        <div class="page-grid" id="pages"></div>
+      </div>
+    </div>
   </div>
 
-  <div id="status">Load a PDF to begin.</div>
+  <!-- Empty State -->
+  <div id="emptyState" class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p>No PDF loaded — drop a file above or click to browse.</p>
+  </div>
 
-  <div id="rangeGroups"></div>
-  <div id="pages"></div>
+</div>
 
-  <div id="previewModal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <span id="previewTitle">Page preview</span>
-        <button id="closePreviewBtn" class="danger">Close</button>
+<!-- Toasts -->
+<div id="toast-root"></div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="previewTitle">Page Preview</h3>
+      <button id="closePreviewBtn" class="btn btn-ghost btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
+        Close
+      </button>
+    </div>
+    <div class="modal-scroll">
+      <canvas id="previewCanvas"></canvas>
+    </div>
+    <div class="modal-foot">
+      <div class="zoom-row">
+        <button id="zoomOutBtn" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14" stroke-linecap="round"/></svg>
+          Zoom Out
+        </button>
+        <span class="zoom-label" id="zoomLevel">100%</span>
+        <button id="zoomInBtn" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+          Zoom In
+        </button>
       </div>
-      <div class="modal-body">
-        <canvas id="previewCanvas"></canvas>
+      <div class="zoom-row">
+        <button id="prevPageBtn" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Prev
+        </button>
+        <button id="nextPageBtn" class="btn btn-ghost btn-sm">
+          Next
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
-      <div class="modal-footer">
-        <button id="zoomOutBtn" class="secondary">Zoom Out</button>
-        <button id="zoomInBtn" class="secondary">Zoom In</button>
-        <span id="zoomLevel">100%</span>
-      </div>
+      <span class="modal-hint">Scroll to zoom · ← → to navigate · Esc to close</span>
     </div>
   </div>
 </div>
 
-<script src="js/pdf-splitter.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+  const state = {
+    pdfDoc: null,
+    previewDoc: null,
+    pageCount: 0,
+    splitResults: [],
+  };
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+
+  function pad(n) { return n.toString().padStart(6, '0'); }
+
+  function ensurePdf(name) { return name.endsWith('.pdf') ? name : `${name}.pdf`; }
+
+  function getStartNumber() {
+    const v = parseInt($('#startNo').val(), 10);
+    return Number.isFinite(v) && v >= 1 ? v : 1;
+  }
+
+  function buildFileName(pageIndex) {
+    return `${$('#prefix').val().trim()}${pad(getStartNumber() + pageIndex)}`;
+  }
+
+  function buildGroupFileName(pageIndexes) {
+    const prefix = $('#prefix').val().trim();
+    if (!pageIndexes.length) return `${prefix}group`;
+    const s = pageIndexes[0] + 1;
+    const e = pageIndexes[pageIndexes.length - 1] + 1;
+    return pageIndexes.length === 1 ? `${prefix}${pad(s)}` : `${prefix}${pad(s)}-${pad(e)}`;
+  }
+
+  function setControls(on) {
+    ['#selectAllBtn','#deselectAllBtn','#splitBtn','#downloadZipBtn','#clearBtn']
+      .forEach(s => $(s).prop('disabled', !on));
+  }
+
+  function setStatus(msg, type = '') {
+    $('#statusBar').removeClass('is-loading is-success is-error').addClass(type ? `is-${type}` : '');
+    $('#statusText').text(msg);
+  }
+
+  function setProgress(pct) {
+    if (pct == null) { $('#progressWrap').hide(); $('#progressBar').css('width','0%'); }
+    else { $('#progressWrap').show(); $('#progressBar').css('width', `${pct}%`); }
+  }
+
+  function showToast(msg, type = 'info', ms = 3500) {
+    const t = $(`<div class="toast toast-${type}">${msg}</div>`);
+    $('#toast-root').append(t);
+    setTimeout(() => t.fadeOut(280, function(){ $(this).remove(); }), ms);
+  }
+
+  // ── Range Parsing ──────────────────────────────────────────────────────────
+
+  function parseRangeGroups(value) {
+    if (!value) return [];
+    const groups = [];
+    for (const part of value.split(',').map(s => s.trim()).filter(Boolean)) {
+      const m = /^(\d+)\s*-\s*(\d+)$/.exec(part);
+      if (m) {
+        let s = parseInt(m[1], 10), e = parseInt(m[2], 10);
+        if (s > e) [s, e] = [e, s];
+        const g = [];
+        for (let x = s; x <= e; x++) if (x >= 1 && x <= state.pageCount) g.push(x - 1);
+        if (g.length) groups.push(g);
+      } else {
+        const v = parseInt(part, 10);
+        if (!Number.isNaN(v) && v >= 1 && v <= state.pageCount) groups.push([v - 1]);
+      }
+    }
+    return groups;
+  }
+
+  function getRangeGroups() { return parseRangeGroups($('#rangeInput').val().trim()); }
+
+  // ── Selection ──────────────────────────────────────────────────────────────
+
+  function selectAllItems() {
+    $('#pages .page-check').prop('checked', true);
+    $('#rangeGroups .group-select').prop('checked', true);
+    $('#pages .page-card').addClass('is-selected');
+    $('#rangeGroups .group-card').addClass('is-checked');
+  }
+
+  function deselectAllItems() {
+    $('#pages .page-check').prop('checked', false);
+    $('#rangeGroups .group-select').prop('checked', false);
+    $('#pages .page-card').removeClass('is-selected');
+    $('#rangeGroups .group-card').removeClass('is-checked');
+  }
+
+  function getSelectedPageIndexes() {
+    const out = [];
+    $('#pages .page-card').each(function () {
+      if ($(this).find('.page-check').prop('checked'))
+        out.push(parseInt($(this).attr('data-page-index'), 10));
+    });
+    return out;
+  }
+
+  // ── PDF Operations ─────────────────────────────────────────────────────────
+
+  async function splitPage(pageIndex, fileName) {
+    const doc = await PDFLib.PDFDocument.create();
+    const [p] = await doc.copyPages(state.pdfDoc, [pageIndex]);
+    doc.addPage(p);
+    const bytes = await doc.save();
+    return { blob: new Blob([bytes], { type: 'application/pdf' }), fileName };
+  }
+
+  async function mergePages(pageIndexes, fileName) {
+    const doc = await PDFLib.PDFDocument.create();
+    const pages = await doc.copyPages(state.pdfDoc, pageIndexes);
+    pages.forEach(p => doc.addPage(p));
+    const bytes = await doc.save();
+    return { blob: new Blob([bytes], { type: 'application/pdf' }), fileName };
+  }
+
+  async function splitPages(pageIndexes) {
+    const results = [];
+    for (const idx of pageIndexes) {
+      const card = $(`#pages .page-card[data-page-index='${idx}']`);
+      const raw  = card.find('.page-name-input').val().trim() || buildFileName(idx);
+      results.push(await splitPage(idx, ensurePdf(raw)));
+    }
+    return results;
+  }
+
+  function buildSplitGroups() {
+    const rg = getRangeGroups();
+    if (rg.length) return rg;
+    return getSelectedPageIndexes().map(i => [i]);
+  }
+
+  // ── Download ───────────────────────────────────────────────────────────────
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function downloadZip() {
+    const zip = new JSZip();
+    const rangeGroups = getRangeGroups();
+
+    if (rangeGroups.length) {
+      // Range mode — merge each range group; no individual pages
+      for (let i = 0; i < rangeGroups.length; i++) {
+        const card     = $(`#rangeGroups .group-card[data-group-index='${i}']`);
+        const checked  = !card.length || card.find('.group-select').prop('checked');
+        if (!checked) continue;
+        const fallback = ensurePdf(buildGroupFileName(rangeGroups[i]));
+        const custom   = card.find('.group-name').val().trim();
+        const fileName = custom ? ensurePdf(custom) : fallback;
+        const result   = await mergePages(rangeGroups[i], fileName);
+        zip.file(result.fileName, result.blob);
+      }
+    } else if (state.splitResults.length) {
+      // Pre-split results mode — use cached blobs
+      state.splitResults.forEach((item, i) => {
+        const card    = $(`#rangeGroups .group-card[data-group-index='${i}']`);
+        const checked = !card.length || card.find('.group-select').prop('checked');
+        if (!checked) return;
+        const custom  = card.find('.group-name').val().trim();
+        item.fileName = custom ? ensurePdf(custom) : item.fileName;
+        zip.file(item.fileName, item.blob);
+      });
+    } else {
+      // Individual page mode — no duplication with range mode
+      const selected = getSelectedPageIndexes();
+      if (selected.length) {
+        const results = await splitPages(selected);
+        results.forEach(r => zip.file(r.fileName, r.blob));
+      }
+    }
+
+    if (Object.keys(zip.files).length === 0) {
+      showToast('Nothing to download. Select pages or set a split range.', 'warning');
+      return;
+    }
+
+    setStatus('Generating ZIP…', 'loading');
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, 'pdf-split-results.zip');
+    const count = Object.keys(zip.files).length;
+    setStatus(`ZIP downloaded — ${count} file(s).`, 'success');
+    showToast('ZIP downloaded successfully.', 'success');
+  }
+
+  // ── Group Cards ────────────────────────────────────────────────────────────
+
+  function createGroupCard(pageIndexes, groupIndex) {
+    const label       = pageIndexes.length > 1
+      ? `Pages ${pageIndexes[0] + 1}–${pageIndexes[pageIndexes.length - 1] + 1}`
+      : `Page ${pageIndexes[0] + 1}`;
+    const initialName = buildGroupFileName(pageIndexes);
+
+    const wrapper = $('<div>').addClass('group-card is-checked').attr('data-group-index', groupIndex);
+
+    const checkbox = $('<input type="checkbox" class="group-select" checked />');
+    checkbox.on('change', function () { wrapper.toggleClass('is-checked', this.checked); });
+
+    const meta = $('<div>').addClass('group-meta');
+    meta.append(
+      $('<div>').addClass('group-title').text(label),
+      $('<div>').addClass('group-sub').text(`${pageIndexes.length} page(s)  ·  Output: ${ensurePdf(initialName)}`)
+    );
+
+    const nameInput = $('<input type="text" class="input group-name" />').val(initialName);
+    nameInput.on('input', function () {
+      const val = $(this).val().trim() || initialName;
+      const fin = ensurePdf(val);
+      if (state.splitResults[groupIndex]) state.splitResults[groupIndex].fileName = fin;
+      wrapper.find('.group-sub').text(`${pageIndexes.length} page(s)  ·  Output: ${fin}`);
+    });
+
+    const dlBtn = $('<button>').addClass('btn btn-success btn-sm').html(
+      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Download`
+    );
+    dlBtn.on('click', async function () {
+      const result = state.splitResults[groupIndex];
+      if (!result) { showToast('Click Split first.', 'warning'); return; }
+      const name = nameInput.val().trim() || initialName;
+      result.fileName = ensurePdf(name);
+      downloadBlob(result.blob, result.fileName);
+    });
+
+    const nameRow = $('<div>').addClass('name-row').append(nameInput);
+    meta.append(nameRow);
+
+    const actions = $('<div>').addClass('group-actions').append(dlBtn);
+    wrapper.append(checkbox, meta, actions);
+    return wrapper;
+  }
+
+  function showSplitGroups(groups) {
+    $('#rangeGroups').empty();
+    if (!groups.length) { $('#rangeGroupsWrap').hide(); return; }
+    groups.forEach((g, i) => $('#rangeGroups').append(createGroupCard(g, i)));
+    $('#rangeGroupsWrap').show();
+  }
+
+  // ── Page Cards ─────────────────────────────────────────────────────────────
+
+  function createPageCard(pageIndex) {
+    const wrapper = $('<div>').addClass('page-card is-selected').attr('data-page-index', pageIndex);
+
+    const thumbWrap = $('<div>').addClass('thumb-wrap');
+    const canvas    = document.createElement('canvas');
+    const overlay   = $('<div>').addClass('thumb-overlay').html(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    );
+    thumbWrap.append(canvas, overlay).on('click', () => openPreview(pageIndex));
+
+    const body   = $('<div>').addClass('card-body');
+    const header = $('<div>').addClass('card-header');
+    const label  = $('<span>').addClass('page-label').text(`Page ${pageIndex + 1}`);
+    const check  = $('<input type="checkbox" class="page-check" checked />');
+    check.on('change', function () { wrapper.toggleClass('is-selected', this.checked); });
+    header.append(label, check);
+
+    const nameInput = $('<input type="text" class="page-name-input" />')
+      .val(buildFileName(pageIndex));
+
+    const dlBtn = $('<button>').addClass('btn btn-ghost btn-sm').html(
+      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Download`
+    );
+    dlBtn.on('click', async function (e) {
+      e.stopPropagation();
+      const raw    = nameInput.val().trim() || buildFileName(pageIndex);
+      const result = await splitPage(pageIndex, ensurePdf(raw));
+      downloadBlob(result.blob, result.fileName);
+    });
+
+    body.append(header, nameInput, $('<div>').addClass('card-footer').append(dlBtn));
+    wrapper.append(thumbWrap, body);
+    return wrapper;
+  }
+
+  // ── Preview ────────────────────────────────────────────────────────────────
+
+  let previewScale = 1.5;
+  let previewPageIndex = null;
+
+  async function renderPreviewCanvas(pageIndex, scale) {
+    const canvas   = document.getElementById('previewCanvas');
+    const page     = await state.previewDoc.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale });
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  }
+
+  async function openPreview(pageIndex) {
+    previewPageIndex = pageIndex;
+    previewScale     = 1.5;
+    $('#previewTitle').text(`Page ${pageIndex + 1} of ${state.pageCount}`);
+    $('#zoomLevel').text(`${Math.round(previewScale * 100)}%`);
+    await renderPreviewCanvas(pageIndex, previewScale);
+    $('#previewModal').removeClass('hidden');
+
+    document.getElementById('previewCanvas').onwheel = async function (e) {
+      e.preventDefault();
+      await changePreviewScale(e.deltaY < 0 ? 0.15 : -0.15);
+    };
+  }
+
+  async function changePreviewScale(delta) {
+    if (previewPageIndex === null) return;
+    previewScale = Math.max(0.3, Math.min(4, previewScale + delta));
+    $('#zoomLevel').text(`${Math.round(previewScale * 100)}%`);
+    await renderPreviewCanvas(previewPageIndex, previewScale);
+  }
+
+  async function navigatePreview(delta) {
+    if (previewPageIndex === null) return;
+    const next = previewPageIndex + delta;
+    if (next < 0 || next >= state.pageCount) return;
+    previewPageIndex = next;
+    $('#previewTitle').text(`Page ${previewPageIndex + 1} of ${state.pageCount}`);
+    await renderPreviewCanvas(previewPageIndex, previewScale);
+  }
+
+  function closePreview() {
+    $('#previewModal').addClass('hidden');
+    document.getElementById('previewCanvas').onwheel = null;
+    previewPageIndex = null;
+  }
+
+  // ── Thumbnail ──────────────────────────────────────────────────────────────
+
+  async function renderThumbnail(pageIndex, canvas) {
+    const page     = await state.previewDoc.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale: 0.6 });
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  }
+
+  // ── Load PDF ───────────────────────────────────────────────────────────────
+
+  async function loadPdf() {
+    const file = document.getElementById('pdfFile').files[0];
+    if (!file) { showToast('Please choose a PDF file first.', 'warning'); return; }
+
+    if (state.previewDoc) { state.previewDoc.destroy(); state.previewDoc = null; }
+
+    setStatus('Loading PDF…', 'loading');
+    setProgress(0);
+    state.splitResults = [];
+
+    try {
+      const buf         = await file.arrayBuffer();
+      state.pdfDoc      = await PDFLib.PDFDocument.load(buf);
+      state.previewDoc  = await pdfjsLib.getDocument({ data: buf }).promise;
+      state.pageCount   = state.pdfDoc.getPageCount();
+    } catch (_) {
+      setStatus('Failed to load PDF — the file may be corrupt or password-protected.', 'error');
+      setProgress(null);
+      showToast('Error loading PDF.', 'error');
+      return;
+    }
+
+    $('#pages').empty();
+    $('#rangeGroups').empty();
+    $('#rangeGroupsWrap').hide();
+    $('#pagesWrap').show();
+    $('#emptyState').hide();
+
+    for (let i = 0; i < state.pageCount; i++) {
+      const card = createPageCard(i);
+      $('#pages').append(card);
+      await renderThumbnail(i, card.find('canvas')[0]);
+      setProgress(Math.round(((i + 1) / state.pageCount) * 100));
+    }
+
+    setProgress(null);
+    setStatus(`Loaded ${state.pageCount} page(s) from "${file.name}". Select pages or set a range, then click Split.`, 'success');
+    setControls(true);
+  }
+
+  // ── Run Split ──────────────────────────────────────────────────────────────
+
+  async function runSplitGroups() {
+    const groups = buildSplitGroups();
+    if (!groups.length) {
+      showToast('Enter a valid range or select at least one page.', 'warning');
+      return false;
+    }
+
+    $('#rangeGroups').empty();
+    setStatus('Preparing split groups…', 'loading');
+    state.splitResults = [];
+
+    for (const pageIndexes of groups) {
+      const result = await mergePages(pageIndexes, ensurePdf(buildGroupFileName(pageIndexes)));
+      state.splitResults.push(result);
+    }
+
+    showSplitGroups(groups);
+    setStatus(`${state.splitResults.length} group(s) ready. Download individually or as a ZIP.`, 'success');
+    showToast(`${state.splitResults.length} group(s) ready.`, 'success');
+    return true;
+  }
+
+  // ── Upload Zone ────────────────────────────────────────────────────────────
+
+  const uploadZone  = document.getElementById('uploadZone');
+  const pdfFileInput = document.getElementById('pdfFile');
+
+  uploadZone.addEventListener('click', () => pdfFileInput.click());
+  pdfFileInput.addEventListener('change', () => {
+    const f = pdfFileInput.files[0];
+    if (f) $('#chosenFileName').text(f.name);
+  });
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault(); uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type === 'application/pdf') {
+      const dt = new DataTransfer(); dt.items.add(f);
+      pdfFileInput.files = dt.files;
+      $('#chosenFileName').text(f.name);
+    } else {
+      showToast('Please drop a PDF file.', 'warning');
+    }
+  });
+
+  // ── Event Wiring ───────────────────────────────────────────────────────────
+
+  $('#loadBtn').on('click', loadPdf);
+  $('#splitBtn').on('click', () => runSplitGroups());
+  $('#selectAllBtn').on('click', selectAllItems);
+  $('#deselectAllBtn').on('click', deselectAllItems);
+
+  $('#downloadZipBtn').on('click', async function () {
+    if (!state.splitResults.length && !getSelectedPageIndexes().length) {
+      if (!confirm('No split output ready. Run Split now?')) return;
+      if (!(await runSplitGroups())) return;
+    }
+    await downloadZip();
+  });
+
+  $('#clearBtn').on('click', function () {
+    if (state.previewDoc) { state.previewDoc.destroy(); }
+    pdfFileInput.value      = '';
+    $('#chosenFileName').text('');
+    $('#rangeInput').val('');
+    $('#pages').empty();
+    $('#rangeGroups').empty();
+    $('#rangeGroupsWrap').hide();
+    $('#pagesWrap').hide();
+    $('#emptyState').show();
+    setStatus('Load a PDF to begin.');
+    setProgress(null);
+    setControls(false);
+    Object.assign(state, { pdfDoc: null, previewDoc: null, pageCount: 0, splitResults: [] });
+  });
+
+  $('#zoomInBtn').on('click',  () => changePreviewScale(0.2));
+  $('#zoomOutBtn').on('click', () => changePreviewScale(-0.2));
+  $('#prevPageBtn').on('click', () => navigatePreview(-1));
+  $('#nextPageBtn').on('click', () => navigatePreview(1));
+  $('#closePreviewBtn').on('click', closePreview);
+  $('#previewModal').on('click', function (e) { if (e.target.id === 'previewModal') closePreview(); });
+
+  document.addEventListener('keydown', async e => {
+    if ($('#previewModal').hasClass('hidden')) return;
+    if (e.key === 'Escape')      { closePreview(); return; }
+    if (e.key === 'ArrowRight')  await navigatePreview(1);
+    if (e.key === 'ArrowLeft')   await navigatePreview(-1);
+    if (e.key === '+')           await changePreviewScale(0.2);
+    if (e.key === '-')           await changePreviewScale(-0.2);
+  });
+</script>
 </body>
 </html>
