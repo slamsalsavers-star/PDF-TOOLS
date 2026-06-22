@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PDF Editor — PDF Tools Hub</title>
   <link rel="stylesheet" href="css/pdf-editor.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Pacifico&family=Sacramento&display=swap" rel="stylesheet" />
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -169,6 +170,15 @@
           </div>
         </div>
 
+        <div class="side-sep"></div>
+        <button class="sig-sidebar-btn" id="openSigBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 17c2-4 4-6 6-6s3 3 5 3 5-3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 21h18" stroke-linecap="round"/>
+          </svg>
+          Add Signature
+        </button>
+
       </div>
     </aside>
 
@@ -191,6 +201,85 @@
             <canvas id="editorCanvas"></canvas>
           </div>
         </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Signature modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="sigModal" style="display:none" role="dialog" aria-modal="true" aria-label="Add Signature">
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 17c2-4 4-6 6-6s3 3 5 3 5-3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 21h18" stroke-linecap="round"/>
+        </svg>
+        Add Signature
+      </div>
+      <button class="modal-close-btn" id="sigClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="sig-tabs">
+      <button class="sig-tab active" data-sigtab="draw">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7-3-3-7 7v3h3z" stroke-linejoin="round"/></svg>
+        Draw
+      </button>
+      <button class="sig-tab" data-sigtab="type">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16" stroke-linecap="round"/></svg>
+        Type
+      </button>
+    </div>
+
+    <!-- Draw panel -->
+    <div id="sigPanelDraw" class="sig-panel">
+      <div class="sig-canvas-wrap">
+        <canvas id="sigCanvas" width="476" height="160"></canvas>
+      </div>
+      <p class="sig-hint">Draw your signature above</p>
+    </div>
+
+    <!-- Type panel -->
+    <div id="sigPanelType" class="sig-panel" style="display:none">
+      <input type="text" id="sigTypeInput" class="sig-text-input" placeholder="Type your name or initials…" maxlength="60" />
+      <div class="sig-font-grid">
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Dancing Script" checked />
+          <span style="font-family:'Dancing Script',cursive">Signature</span>
+        </label>
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Great Vibes" />
+          <span style="font-family:'Great Vibes',cursive">Signature</span>
+        </label>
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Pacifico" />
+          <span style="font-family:'Pacifico',cursive">Signature</span>
+        </label>
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Sacramento" />
+          <span style="font-family:'Sacramento',cursive">Signature</span>
+        </label>
+      </div>
+      <div class="sig-type-preview" id="sigTypePreview">Your Signature</div>
+    </div>
+
+    <!-- Footer: color + actions -->
+    <div class="sig-footer">
+      <label class="sig-color-row">
+        <span class="opt-lbl">Color</span>
+        <input type="color" id="sigColorPicker" value="#1e293b" />
+      </label>
+      <div class="sig-footer-btns">
+        <button class="btn btn-ghost-outline" id="sigClearBtn">Clear</button>
+        <button class="btn btn-primary" id="sigPlaceBtn">
+          Place on PDF
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
 

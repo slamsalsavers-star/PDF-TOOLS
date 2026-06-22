@@ -122,6 +122,9 @@ function bindUI() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', onKeyDown);
+
+  // Signature modal
+  setupSignatureModal();
 }
 
 // ─── Load PDF ─────────────────────────────────────────────────────────────────
@@ -769,4 +772,165 @@ function toast(msg, isError = false) {
   el.textContent = msg;
   document.getElementById('toast-root').appendChild(el);
   setTimeout(() => el.remove(), 3500);
+}
+
+// ─── Signature Modal ──────────────────────────────────────────────────────────
+function setupSignatureModal() {
+  // Open button (in sidebar — only exists after file loads, but listener is safe to bind early)
+  document.getElementById('openSigBtn').addEventListener('click', openSignatureModal);
+
+  // Close
+  document.getElementById('sigClose').addEventListener('click', closeSignatureModal);
+  document.getElementById('sigModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('sigModal')) closeSignatureModal();
+  });
+
+  // Tab switching
+  document.querySelectorAll('.sig-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.sig-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.sigtab;
+      document.getElementById('sigPanelDraw').style.display = which === 'draw' ? '' : 'none';
+      document.getElementById('sigPanelType').style.display = which === 'type' ? '' : 'none';
+    });
+  });
+
+  // Draw canvas
+  const sigCanvas = document.getElementById('sigCanvas');
+  const sigCtx    = sigCanvas.getContext('2d');
+  let drawing = false, lx = 0, ly = 0;
+
+  function sigPos(e) {
+    const r = sigCanvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+  function sigStart(e) {
+    drawing = true;
+    const { x, y } = sigPos(e);
+    lx = x; ly = y;
+    sigCtx.beginPath();
+    sigCtx.arc(x, y, 1, 0, Math.PI * 2);
+    sigCtx.fillStyle = document.getElementById('sigColorPicker').value;
+    sigCtx.fill();
+  }
+  function sigDraw(e) {
+    if (!drawing) return;
+    const { x, y } = sigPos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(lx, ly);
+    sigCtx.lineTo(x, y);
+    sigCtx.strokeStyle = document.getElementById('sigColorPicker').value;
+    sigCtx.lineWidth   = 2.2;
+    sigCtx.lineCap     = 'round';
+    sigCtx.lineJoin    = 'round';
+    sigCtx.stroke();
+    lx = x; ly = y;
+  }
+  function sigEnd() { drawing = false; }
+
+  sigCanvas.addEventListener('mousedown',  sigStart);
+  sigCanvas.addEventListener('mousemove',  sigDraw);
+  sigCanvas.addEventListener('mouseup',    sigEnd);
+  sigCanvas.addEventListener('mouseleave', sigEnd);
+  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); sigStart(e); }, { passive: false });
+  sigCanvas.addEventListener('touchmove',  e => { e.preventDefault(); sigDraw(e);  }, { passive: false });
+  sigCanvas.addEventListener('touchend',   sigEnd);
+
+  // Clear
+  document.getElementById('sigClearBtn').addEventListener('click', () => {
+    const which = document.querySelector('.sig-tab.active')?.dataset.sigtab;
+    if (which === 'draw') {
+      sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    } else {
+      document.getElementById('sigTypeInput').value = '';
+      document.getElementById('sigTypePreview').textContent = 'Your Signature';
+    }
+  });
+
+  // Type preview — live update
+  function updateTypePreview() {
+    const text  = document.getElementById('sigTypeInput').value.trim() || 'Your Signature';
+    const font  = document.querySelector('input[name="sigFont"]:checked')?.value || 'Dancing Script';
+    const color = document.getElementById('sigColorPicker').value;
+    const prev  = document.getElementById('sigTypePreview');
+    prev.textContent    = text;
+    prev.style.fontFamily = `'${font}', cursive`;
+    prev.style.color    = color;
+  }
+  document.getElementById('sigTypeInput').addEventListener('input', updateTypePreview);
+  document.querySelectorAll('input[name="sigFont"]').forEach(r => r.addEventListener('change', updateTypePreview));
+  document.getElementById('sigColorPicker').addEventListener('input', updateTypePreview);
+
+  // Place
+  document.getElementById('sigPlaceBtn').addEventListener('click', placeSignature);
+}
+
+function openSignatureModal() {
+  document.getElementById('sigModal').style.display = 'flex';
+}
+
+function closeSignatureModal() {
+  document.getElementById('sigModal').style.display = 'none';
+}
+
+async function placeSignature() {
+  const which = document.querySelector('.sig-tab.active')?.dataset.sigtab;
+  let dataURL;
+
+  if (which === 'draw') {
+    const sigCanvas = document.getElementById('sigCanvas');
+    const sigCtx    = sigCanvas.getContext('2d');
+    // Check if anything was actually drawn
+    const pixels = sigCtx.getImageData(0, 0, sigCanvas.width, sigCanvas.height).data;
+    const hasInk = pixels.some((v, i) => i % 4 === 3 && v > 0);
+    if (!hasInk) { toast('Please draw your signature first.', true); return; }
+    dataURL = sigCanvas.toDataURL('image/png');
+
+  } else {
+    const text  = document.getElementById('sigTypeInput').value.trim();
+    if (!text) { toast('Please type your name or initials first.', true); return; }
+    const font  = document.querySelector('input[name="sigFont"]:checked')?.value || 'Dancing Script';
+    const color = document.getElementById('sigColorPicker').value;
+
+    // Ensure Google Font is loaded before drawing to canvas
+    try { await document.fonts.load(`bold 72px '${font}'`); } catch (_) {}
+
+    const off = document.createElement('canvas');
+    const ctx = off.getContext('2d');
+    const fs  = 72;
+    ctx.font  = `bold ${fs}px '${font}', cursive`;
+    const w   = Math.ceil(ctx.measureText(text).width) + 32;
+    const h   = Math.ceil(fs * 1.5);
+    off.width  = w;
+    off.height = h;
+    ctx.font      = `bold ${fs}px '${font}', cursive`;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 16, fs * 1.1);
+    dataURL = off.toDataURL('image/png');
+  }
+
+  closeSignatureModal();
+
+  fabric.Image.fromURL(dataURL, img => {
+    // Scale so the signature is a reasonable fraction of the page width
+    const maxW = fabricCanvas.width  * 0.38;
+    const maxH = fabricCanvas.height * 0.15;
+    if (img.width > maxW)             img.scaleToWidth(maxW);
+    if (img.getScaledHeight() > maxH) img.scaleToHeight(maxH);
+
+    // Place at bottom-right area (typical signature spot)
+    img.set({
+      left: fabricCanvas.width  * 0.55,
+      top:  fabricCanvas.height * 0.78,
+    });
+
+    fabricCanvas.add(img);
+    fabricCanvas.setActiveObject(img);
+    fabricCanvas.renderAll();
+    pushHistory();
+    setTool('select');
+    toast('Signature placed — drag it to reposition.');
+  });
 }
