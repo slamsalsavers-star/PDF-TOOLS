@@ -268,6 +268,42 @@ input[type="color"] {
   background: var(--surface);
   flex-shrink: 0;
 }
+
+/* Format buttons (align / style toggles) */
+.fmt-btns {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.fmt-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-family: inherit;
+  padding: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.fmt-btn:hover { background: var(--bg); border-color: var(--border-strong); }
+.fmt-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+.fmt-bold   { font-weight: 700; }
+.fmt-italic { font-style: italic; }
+.fmt-under  { text-decoration: underline; }
+.fmt-strike { text-decoration: line-through; }
+.fmt-over   { text-decoration: overline; }
 input[type="range"] {
   width: 100%;
   accent-color: var(--primary);

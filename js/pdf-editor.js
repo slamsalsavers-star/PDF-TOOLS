@@ -57,15 +57,10 @@ function setupFabric() {
   fabricCanvas.on('object:modified', () => pushHistory());
   fabricCanvas.on('path:created',    () => pushHistory());
 
-  // Sync toolbar controls when a text object is selected
-  fabricCanvas.on('selection:created', syncTextControls);
-  fabricCanvas.on('selection:updated', syncTextControls);
-  fabricCanvas.on('selection:cleared', () => {
-    if (activeTool !== 'text') {
-      document.getElementById('optFontSize').style.display   = 'none';
-      document.getElementById('optFontFamily').style.display = 'none';
-    }
-  });
+  // Sync toolbar controls when objects are selected / deselected
+  fabricCanvas.on('selection:created', onSelectionChange);
+  fabricCanvas.on('selection:updated', onSelectionChange);
+  fabricCanvas.on('selection:cleared', onSelectionCleared);
 }
 
 function bindUI() {
@@ -122,6 +117,91 @@ function bindUI() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', onKeyDown);
+
+  // ── Text alignment ──────────────────────────────────────────────────
+  document.querySelectorAll('[data-align]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-align]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const obj = fabricCanvas.getActiveObject();
+      if (obj && (obj.type === 'i-text' || obj.type === 'text')) {
+        obj.set('textAlign', btn.dataset.align);
+        fabricCanvas.renderAll();
+        pushHistory();
+      }
+    });
+  });
+
+  // ── Style toggles ───────────────────────────────────────────────────
+  const styleMap = [
+    { id: 'fmtBold',      prop: 'fontWeight', on: 'bold',   off: 'normal' },
+    { id: 'fmtItalic',    prop: 'fontStyle',  on: 'italic', off: 'normal' },
+    { id: 'fmtUnderline', prop: 'underline',  on: true,     off: false    },
+    { id: 'fmtStrike',    prop: 'linethrough',on: true,     off: false    },
+    { id: 'fmtOverline',  prop: 'overline',   on: true,     off: false    },
+  ];
+  styleMap.forEach(({ id, prop, on, off }) => {
+    document.getElementById(id).addEventListener('click', () => {
+      const obj = fabricCanvas.getActiveObject();
+      if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+      const cur    = obj.get(prop);
+      const isOn   = cur === on || cur === true;
+      obj.set(prop, isOn ? off : on);
+      document.getElementById(id).classList.toggle('active', !isOn);
+      fabricCanvas.renderAll();
+      pushHistory();
+    });
+  });
+
+  // ── Line height ─────────────────────────────────────────────────────
+  document.getElementById('lineHeightSlider').addEventListener('input', () => {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+    const v = parseFloat(document.getElementById('lineHeightSlider').value);
+    obj.set('lineHeight', v);
+    document.getElementById('lineHeightVal').textContent = v.toFixed(1);
+    fabricCanvas.renderAll();
+  });
+  document.getElementById('lineHeightSlider').addEventListener('change', pushHistory);
+
+  // ── Letter spacing ──────────────────────────────────────────────────
+  document.getElementById('letterSpacingSlider').addEventListener('input', () => {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+    const v = parseInt(document.getElementById('letterSpacingSlider').value);
+    obj.set('charSpacing', v);
+    document.getElementById('letterSpacingVal').textContent = v;
+    fabricCanvas.renderAll();
+  });
+  document.getElementById('letterSpacingSlider').addEventListener('change', pushHistory);
+
+  // ── Text highlight ──────────────────────────────────────────────────
+  document.getElementById('textBgColor').addEventListener('input', () => {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+    obj.set('textBackgroundColor', document.getElementById('textBgColor').value);
+    fabricCanvas.renderAll();
+  });
+  document.getElementById('textBgColor').addEventListener('change', pushHistory);
+
+  document.getElementById('clearTextBg').addEventListener('click', () => {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+    obj.set('textBackgroundColor', '');
+    fabricCanvas.renderAll();
+    pushHistory();
+  });
+
+  // ── Opacity ─────────────────────────────────────────────────────────
+  document.getElementById('opacitySlider').addEventListener('input', () => {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj) return;
+    const v = parseInt(document.getElementById('opacitySlider').value);
+    obj.set('opacity', v / 100);
+    document.getElementById('opacityVal').textContent = v;
+    fabricCanvas.renderAll();
+  });
+  document.getElementById('opacitySlider').addEventListener('change', pushHistory);
 
   // Signature modal
   setupSignatureModal();
@@ -242,10 +322,11 @@ function setTool(tool) {
 
   // Show/hide option panels
   const isText = tool === 'text';
-  document.getElementById('optFontFamily').style.display = isText ? '' : 'none';
-  document.getElementById('optFontSize').style.display   = isText ? '' : 'none';
-  document.getElementById('optBrush').style.display      = tool === 'draw' ? '' : 'none';
-  document.getElementById('optColor').style.display      = tool === 'eraser' ? 'none' : '';
+  const textIDs = ['optFontFamily','optFontSize','optTextAlign','optTextStyle','optLineHeight','optLetterSpacing','optTextHighlight'];
+  textIDs.forEach(id => { document.getElementById(id).style.display = isText ? '' : 'none'; });
+  document.getElementById('optBrush').style.display  = tool === 'draw'   ? '' : 'none';
+  document.getElementById('optColor').style.display  = tool === 'eraser' ? 'none' : '';
+  if (!isText) document.getElementById('optOpacity').style.display = 'none';
 
   // Cursor class
   const outer = document.getElementById('canvasOuter');
@@ -300,17 +381,68 @@ function updateActiveTextProps() {
   }
 }
 
+function onSelectionChange() {
+  syncTextControls();
+  syncOpacityControl();
+}
+
+function onSelectionCleared() {
+  const textIDs = ['optFontFamily','optFontSize','optTextAlign','optTextStyle','optLineHeight','optLetterSpacing','optTextHighlight'];
+  if (activeTool !== 'text') {
+    textIDs.forEach(id => { document.getElementById(id).style.display = 'none'; });
+  }
+  document.getElementById('optOpacity').style.display = 'none';
+}
+
 function syncTextControls() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
-  document.getElementById('optFontFamily').style.display = '';
-  document.getElementById('optFontSize').style.display   = '';
-  document.getElementById('optBrush').style.display      = 'none';
+
+  // Show all text-specific controls
+  ['optFontFamily','optFontSize','optTextAlign','optTextStyle','optLineHeight','optLetterSpacing','optTextHighlight']
+    .forEach(id => { document.getElementById(id).style.display = ''; });
+  document.getElementById('optBrush').style.display = 'none';
+
+  // Basic props
   document.getElementById('colorPicker').value = rgbToHex(obj.fill) || '#000000';
   document.getElementById('fontFamily').value  = obj.fontFamily || 'Inter, system-ui, sans-serif';
   const snapped = [10,12,14,16,18,24,32,48,64].reduce((a,b) =>
     Math.abs(b - obj.fontSize) < Math.abs(a - obj.fontSize) ? b : a);
   document.getElementById('fontSize').value = snapped;
+
+  // Alignment
+  const align = obj.textAlign || 'left';
+  document.querySelectorAll('[data-align]').forEach(b =>
+    b.classList.toggle('active', b.dataset.align === align));
+
+  // Style toggles
+  document.getElementById('fmtBold').classList.toggle('active',      obj.fontWeight === 'bold');
+  document.getElementById('fmtItalic').classList.toggle('active',    obj.fontStyle  === 'italic');
+  document.getElementById('fmtUnderline').classList.toggle('active', !!obj.underline);
+  document.getElementById('fmtStrike').classList.toggle('active',    !!obj.linethrough);
+  document.getElementById('fmtOverline').classList.toggle('active',  !!obj.overline);
+
+  // Line height
+  const lh = obj.lineHeight || 1.16;
+  document.getElementById('lineHeightSlider').value = lh;
+  document.getElementById('lineHeightVal').textContent = lh.toFixed(1);
+
+  // Letter spacing
+  const ls = obj.charSpacing || 0;
+  document.getElementById('letterSpacingSlider').value = ls;
+  document.getElementById('letterSpacingVal').textContent = ls;
+
+  // Highlight
+  document.getElementById('textBgColor').value = obj.textBackgroundColor || '#fef08a';
+}
+
+function syncOpacityControl() {
+  const obj = fabricCanvas.getActiveObject();
+  if (!obj) return;
+  const pct = Math.round((obj.opacity ?? 1) * 100);
+  document.getElementById('optOpacity').style.display   = '';
+  document.getElementById('opacitySlider').value        = pct;
+  document.getElementById('opacityVal').textContent     = pct;
 }
 
 function rgbToHex(color) {

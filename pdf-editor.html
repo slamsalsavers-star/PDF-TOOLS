@@ -164,6 +164,64 @@
               <option value="64">64</option>
             </select>
           </div>
+          <!-- Alignment — text only -->
+          <div class="side-opt" id="optTextAlign" style="display:none">
+            <span class="opt-lbl">Align</span>
+            <div class="fmt-btns">
+              <button class="fmt-btn active" data-align="left" title="Align left">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h12M3 18h15" stroke-linecap="round"/></svg>
+              </button>
+              <button class="fmt-btn" data-align="center" title="Center">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M6 12h12M4.5 18h15" stroke-linecap="round"/></svg>
+              </button>
+              <button class="fmt-btn" data-align="right" title="Align right">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M9 12h12M6 18h15" stroke-linecap="round"/></svg>
+              </button>
+              <button class="fmt-btn" data-align="justify" title="Justify">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Style toggles — text only -->
+          <div class="side-opt" id="optTextStyle" style="display:none">
+            <span class="opt-lbl">Style</span>
+            <div class="fmt-btns">
+              <button class="fmt-btn fmt-bold"   id="fmtBold"      title="Bold">B</button>
+              <button class="fmt-btn fmt-italic" id="fmtItalic"    title="Italic">I</button>
+              <button class="fmt-btn fmt-under"  id="fmtUnderline" title="Underline">U</button>
+              <button class="fmt-btn fmt-strike" id="fmtStrike"    title="Strikethrough">S</button>
+              <button class="fmt-btn fmt-over"   id="fmtOverline"  title="Overline">O</button>
+            </div>
+          </div>
+
+          <!-- Line height — text only -->
+          <div class="side-opt side-opt-col" id="optLineHeight" style="display:none">
+            <span class="opt-lbl">Line height <span id="lineHeightVal">1.2</span></span>
+            <input type="range" id="lineHeightSlider" min="1" max="3" step="0.1" value="1.16" />
+          </div>
+
+          <!-- Letter spacing — text only -->
+          <div class="side-opt side-opt-col" id="optLetterSpacing" style="display:none">
+            <span class="opt-lbl">Letter spacing <span id="letterSpacingVal">0</span></span>
+            <input type="range" id="letterSpacingSlider" min="-100" max="800" step="10" value="0" />
+          </div>
+
+          <!-- Text highlight / background — text only -->
+          <div class="side-opt" id="optTextHighlight" style="display:none">
+            <span class="opt-lbl">Highlight</span>
+            <div class="fmt-btns">
+              <input type="color" id="textBgColor" value="#fef08a" title="Highlight color" />
+              <button class="fmt-btn" id="clearTextBg" title="Remove highlight">✕</button>
+            </div>
+          </div>
+
+          <!-- Opacity — any selected object -->
+          <div class="side-opt side-opt-col" id="optOpacity" style="display:none">
+            <span class="opt-lbl">Opacity <span id="opacityVal">100</span>%</span>
+            <input type="range" id="opacitySlider" min="0" max="100" step="1" value="100" />
+          </div>
+
           <div class="side-opt side-opt-col" id="optBrush" style="display:none">
             <span class="opt-lbl">Width <span id="brushVal">3</span>px</span>
             <input type="range" id="brushSize" min="1" max="24" value="3" />
