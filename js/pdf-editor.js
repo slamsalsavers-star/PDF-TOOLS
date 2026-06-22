@@ -139,10 +139,11 @@ async function loadPDF(file) {
     Object.keys(pageTextCache).forEach(k => delete pageTextCache[k]);
 
     document.getElementById('filenameBadge').textContent = fileName;
-    document.getElementById('tbUpload').style.display = 'none';
-    document.getElementById('tbEdit').style.display   = '';
-    document.getElementById('uploadOverlay').style.display = 'none';
-    document.getElementById('canvasScroll').style.display  = '';
+    document.getElementById('tbUpload').style.display      = 'none';
+    document.getElementById('topbarFileInfo').style.display = 'flex';
+    document.getElementById('tbEdit').style.display        = '';
+    document.getElementById('uploadOverlay').style.display  = 'none';
+    document.getElementById('canvasScroll').style.display   = '';
 
     await renderPage(1);
     setStatus(`Loaded "${fileName}" — ${totalPages} page${totalPages > 1 ? 's' : ''}.`);
@@ -174,27 +175,24 @@ async function renderPage(pageNum) {
     fabricCanvas.setWidth(viewport.width);
     fabricCanvas.setHeight(viewport.height);
 
-    // Set background, then load saved annotations
+    // Restore annotations first — loadFromJSON internally calls clear() which
+    // wipes backgroundImage, so we must set the background AFTER it completes.
+    const saved = pageStates[pageNum];
+    if (saved) {
+      await new Promise(r => fabricCanvas.loadFromJSON(saved, r));
+    } else {
+      fabricCanvas.remove(...fabricCanvas.getObjects());
+    }
+
+    // Set background image last so loadFromJSON cannot clear it
     await new Promise(resolve => {
       fabric.Image.fromURL(dataURL, bgImg => {
         bgImg.selectable = false;
         bgImg.evented    = false;
         bgImg.scaleToWidth(viewport.width);
-
         fabricCanvas.setBackgroundImage(bgImg, () => {
-          // Remove existing objects
-          fabricCanvas.remove(...fabricCanvas.getObjects());
-
-          const saved = pageStates[pageNum];
-          if (saved) {
-            fabricCanvas.loadFromJSON(saved, () => {
-              fabricCanvas.renderAll();
-              resolve();
-            });
-          } else {
-            fabricCanvas.renderAll();
-            resolve();
-          }
+          fabricCanvas.renderAll();
+          resolve();
         });
       });
     });
@@ -348,9 +346,46 @@ async function getTextAtPoint(canvasX, canvasY) {
     const pad    = 4;
     if (canvasX >= left - pad && canvasX <= right + pad &&
         canvasY >= top  - pad && canvasY <= bottom + pad) {
-      return { str: item.str, left, top, width: right - left, height: bottom - top,
-               fontSize: Math.round(fs * RENDER_SCALE) };
+
+      const fontSizePx = Math.round(fs * RENDER_SCALE);
+      const fontFamily = content.styles?.[item.fontName]?.fontFamily || 'sans-serif';
+      const totalWidth = right - left;
+
+      // Narrow down to the specific word the user clicked
+      const wordInfo = detectWordAtX(item.str, canvasX - left, totalWidth, fontSizePx, fontFamily);
+      if (wordInfo) {
+        return {
+          str:        wordInfo.word,
+          left:       left + wordInfo.wordLeft,
+          top,
+          width:      wordInfo.wordWidth,
+          height:     bottom - top,
+          fontSize:   fontSizePx,
+          fontFamily,
+        };
+      }
+
+      return { str: item.str, left, top, width: totalWidth, height: bottom - top, fontSize: fontSizePx, fontFamily };
     }
+  }
+  return null;
+}
+
+function detectWordAtX(str, relativeX, totalWidth, fontSize, fontFamily) {
+  const tmp = document.createElement('canvas');
+  const ctx = tmp.getContext('2d');
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  const totalMeasured = ctx.measureText(str).width;
+  if (!totalMeasured) return null;
+  const scale = totalWidth / totalMeasured;
+
+  let x = 0;
+  for (const part of str.split(/(\s+)/)) {
+    const w = ctx.measureText(part).width * scale;
+    if (part.trim() && relativeX >= x && relativeX < x + w) {
+      return { word: part, wordLeft: x, wordWidth: w };
+    }
+    x += w;
   }
   return null;
 }
@@ -377,13 +412,13 @@ async function onMouseDown(opt) {
         selectable: false,
         evented:    false,
       }));
-      // Place editable replacement text
+      // Place editable replacement text preserving original properties
       const txt = new fabric.IText(hit.str, {
         left:       hit.left,
         top:        hit.top,
-        fontSize:   Math.max(8, Math.round(hit.fontSize * 0.80)),
-        fill:       color,
-        fontFamily: font,
+        fontSize:   hit.fontSize,
+        fill:       '#000000',
+        fontFamily: hit.fontFamily,
         editable:   true,
       });
       fabricCanvas.add(txt);
@@ -406,7 +441,6 @@ async function onMouseDown(opt) {
       txt.selectAll();
     }
 
-    setTool('select');
     pushHistory();
     return;
   }
@@ -498,8 +532,13 @@ function onKeyDown(e) {
     case 'r': case 'R': setTool('rect');      break;
     case 'e': case 'E': setTool('eraser');    break;
     case 'Delete': case 'Backspace': {
-      const obj = fabricCanvas.getActiveObject();
-      if (obj) { fabricCanvas.remove(obj); fabricCanvas.renderAll(); pushHistory(); }
+      const objs = fabricCanvas.getActiveObjects();
+      if (objs.length) {
+        fabricCanvas.discardActiveObject();
+        fabricCanvas.remove(...objs);
+        fabricCanvas.renderAll();
+        pushHistory();
+      }
       break;
     }
     case 'ArrowLeft':  goToPage(currentPage - 1); break;
@@ -549,8 +588,18 @@ function redo() {
 }
 
 function applyHistoryState(jsonStr) {
-  fabricCanvas.remove(...fabricCanvas.getObjects());
-  fabricCanvas.loadFromJSON(jsonStr, fabricCanvas.renderAll.bind(fabricCanvas));
+  fabricCanvas.loadFromJSON(jsonStr, () => {
+    // Re-apply background after loadFromJSON clears it via clear()
+    const bgURL = pageBackgrounds[currentPage];
+    if (!bgURL) { fabricCanvas.renderAll(); return; }
+    const vp = pageViewports[currentPage];
+    fabric.Image.fromURL(bgURL, bgImg => {
+      bgImg.selectable = false;
+      bgImg.evented    = false;
+      bgImg.scaleToWidth(vp.width);
+      fabricCanvas.setBackgroundImage(bgImg, () => fabricCanvas.renderAll());
+    });
+  });
 }
 
 function updateUndoRedoBtns() {
