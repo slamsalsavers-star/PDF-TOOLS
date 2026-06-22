@@ -327,9 +327,10 @@ body {
   justify-content: center;
   margin-bottom: 24px;
 }
-.tool-icon-blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
-.tool-icon-violet { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
-.tool-icon-emerald { background: rgba(5, 150, 105, 0.1); color: #059669; }
+.tool-icon-blue    { background: rgba(37, 99, 235, 0.1);  color: #2563eb; }
+.tool-icon-violet  { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+.tool-icon-emerald { background: rgba(5, 150, 105, 0.1);  color: #059669; }
+.tool-icon-amber   { background: rgba(217, 119, 6, 0.1);  color: #b45309; }
 .tool-info { flex: 1; }
 .tool-label {
   font-size: 0.75rem;
