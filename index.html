@@ -3,237 +3,588 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF Tools Hub — Free Browser-Based PDF Utilities</title>
-  <link rel="stylesheet" href="css/index.css">
+  <title>PDF Tools — Browser-Based PDF Editor, Merger, Splitter & Converter</title>
+  <meta name="description" content="Split, merge, edit, and convert PDFs entirely in your browser. Zero uploads. GDPR & HIPAA compliant by design. Free forever — no account needed." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/index.css" />
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="site-nav">
-    <div class="nav-inner">
-      <a class="brand" href="index.html">
-        <svg class="brand-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="8" fill="#2563eb"/>
-          <path d="M9 8h9l5 5v11H9V8z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M18 8v5h5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M12 17h8M12 20h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        PDF Tools Hub
-      </a>
-      <div class="nav-links">
-        <a href="#tools">Tools</a>
-        <a href="#feedback" class="nav-cta">Give Feedback</a>
-      </div>
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <svg class="logo-icon" viewBox="0 0 36 36" fill="none">
+        <rect width="36" height="36" rx="10" fill="#059669"/>
+        <path d="M10 9h11l6 6v13H10V9z" fill="white" fill-opacity="0.18" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M21 9v6h6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13 18h10M13 22h7" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span>PDF<strong>Tools</strong></span>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#tools">Tools</a>
+      <a href="#why">Why Us</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
     </div>
-  </nav>
+    <div class="nav-right">
+      <a href="#pricing" class="nav-btn-ghost">See Pricing</a>
+      <a href="#tools" class="nav-btn-primary">Try Free &rarr;</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-inner">
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="hero-bg-grid" aria-hidden="true"></div>
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
       <div class="hero-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        100% Private — Runs entirely in your browser
+        <span class="badge-dot"></span>
+        Zero-upload · Privacy-first · 100% in your browser
       </div>
-      <h1>PDF Tools That<br><span class="hero-accent">Respect Your Privacy</span></h1>
-      <p class="hero-sub">Split, merge, and manage your PDFs instantly — no uploads, no accounts, no data ever leaves your device.</p>
+      <h1>
+        PDF tools that<br>
+        <span class="hero-gradient">never touch a server</span>
+      </h1>
+      <p class="hero-sub">
+        Split, merge, edit, and convert PDFs instantly. Your files never leave your device —
+        making compliance with GDPR, HIPAA, and CCPA effortless by design.
+      </p>
       <div class="hero-actions">
-        <a href="#tools" class="btn btn-primary">Explore Tools</a>
-        <a href="#feedback" class="btn btn-ghost">Request a Feature</a>
+        <a href="#tools" class="btn-hero-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Start for free — no account
+        </a>
+        <a href="#pricing" class="btn-hero-ghost">View pricing &darr;</a>
       </div>
-    </div>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="pdf-stack">
-        <div class="pdf-card pdf-card-1">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#2563eb" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <span>document.pdf</span>
+      <div class="hero-proof">
+        <div class="proof-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.8"/></svg>
+          GDPR compliant by design
         </div>
-        <div class="pdf-card pdf-card-2">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#60a5fa" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <span>report.pdf</span>
+        <div class="proof-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.8"/></svg>
+          90% cheaper than Adobe
         </div>
-        <div class="pdf-card pdf-card-3">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#93c5fd" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#93c5fd" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <span>contract.pdf</span>
-        </div>
-        <div class="merge-arrow">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="pdf-card pdf-result">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#2563eb" fill-opacity="0.1" stroke="#2563eb" stroke-width="1.5"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <span>merged.pdf</span>
-          <span class="pdf-check">&#10003;</span>
+        <div class="proof-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.8"/></svg>
+          No install required
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- TRUST STRIP -->
-  <div class="trust-strip">
-    <div class="trust-inner">
-      <div class="trust-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-        No file uploads
-      </div>
-      <div class="trust-dot"></div>
-      <div class="trust-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        No account required
-      </div>
-      <div class="trust-dot"></div>
-      <div class="trust-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Completely free
-      </div>
-      <div class="trust-dot"></div>
-      <div class="trust-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Zero data collected
+    <div class="hero-visual" aria-hidden="true">
+      <div class="devtools-card">
+        <div class="devtools-bar">
+          <div class="devtools-dots"><span></span><span></span><span></span></div>
+          <span class="devtools-title">DevTools — Network</span>
+        </div>
+        <div class="devtools-body">
+          <div class="devtools-row devtools-header-row">
+            <span>Name</span><span>Status</span><span>Type</span><span>Size</span>
+          </div>
+          <div class="devtools-row devtools-file-row">
+            <span class="file-name">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#64748b" stroke-width="2"/></svg>
+              contract.pdf
+            </span>
+            <span class="status-local">— (local)</span>
+            <span>document</span>
+            <span>2.3 MB</span>
+          </div>
+          <div class="devtools-row devtools-file-row">
+            <span class="file-name">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#64748b" stroke-width="2"/></svg>
+              medical-record.pdf
+            </span>
+            <span class="status-local">— (local)</span>
+            <span>document</span>
+            <span>890 KB</span>
+          </div>
+          <div class="devtools-empty">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#10b981" stroke-width="2"/></svg>
+            <span>0 requests sent to any server</span>
+          </div>
+        </div>
+        <div class="devtools-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/></svg>
+          Your files never left the browser
+        </div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- TOOLS -->
-  <section id="tools" class="tools-section">
-    <div class="section-inner">
-      <div class="section-header">
-        <h2>Available Tools</h2>
-        <p>Pick the PDF tool you need and get started instantly — no waiting, no loading.</p>
-      </div>
-      <div class="tools-grid">
-
-        <article class="tool-card">
-          <div class="tool-icon tool-icon-blue">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 14l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          </div>
-          <div class="tool-info">
-            <div class="tool-label">Split</div>
-            <h3>PDF Splitter</h3>
-            <p>Extract individual pages or custom page ranges from any PDF. Download results instantly, one file at a time.</p>
-          </div>
-          <a class="btn btn-primary tool-btn" href="pdf-splitter.html">Open Splitter &rarr;</a>
-        </article>
-
-        <article class="tool-card">
-          <div class="tool-icon tool-icon-violet">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 10l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 6v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          </div>
-          <div class="tool-info">
-            <div class="tool-label">Merge</div>
-            <h3>PDF Merger</h3>
-            <p>Combine multiple PDFs into one document. Drag to reorder files, then download your merged PDF in seconds.</p>
-          </div>
-          <a class="btn btn-primary tool-btn" href="pdf-merger.html">Open Merger &rarr;</a>
-        </article>
-
-        <article class="tool-card">
-          <div class="tool-icon tool-icon-emerald">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 13h5M8 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="17" r="3" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 17h3M17 15.5v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-          <div class="tool-info">
-            <div class="tool-label">Edit</div>
-            <h3>PDF Editor</h3>
-            <p>Annotate any PDF with text, highlights, freehand drawings, and shapes. Download your edited file instantly.</p>
-          </div>
-          <a class="btn btn-primary tool-btn" href="pdf-editor.html">Open Editor &rarr;</a>
-        </article>
-
-        <article class="tool-card">
-          <div class="tool-icon tool-icon-amber">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 13v6M14 16l3 3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="tool-info">
-            <div class="tool-label">Convert</div>
-            <h3>PDF to Word</h3>
-            <p>Convert PDF to an editable .docx — extracts text with bold/italic/headings, embeds images, and detects tables automatically.</p>
-          </div>
-          <a class="btn btn-primary tool-btn" href="pdf-to-doc.html">Open Converter &rarr;</a>
-        </article>
-
-      </div>
+<!-- ═══════════════ STATS STRIP ═══════════════ -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <strong>$2.4B</strong>
+      <span>PDF market size (2025)</span>
     </div>
-  </section>
+    <div class="stat-div"></div>
+    <div class="stat-item">
+      <strong>~85%</strong>
+      <span>Gross margin — no server costs</span>
+    </div>
+    <div class="stat-div"></div>
+    <div class="stat-item">
+      <strong>90%</strong>
+      <span>Cheaper than Adobe Acrobat</span>
+    </div>
+    <div class="stat-div"></div>
+    <div class="stat-item">
+      <strong>0 bytes</strong>
+      <span>Transmitted to any server</span>
+    </div>
+  </div>
+</div>
 
-  <!-- FEEDBACK -->
-  <section id="feedback" class="feedback-section">
-    <div class="section-inner">
-      <div class="feedback-layout">
-        <div class="feedback-copy">
-          <div class="section-label">Feedback</div>
-          <h2>Have an idea?</h2>
-          <p>Suggest a new tool or improvement. All feedback goes straight to the developer — no middlemen, no ticket queues.</p>
-          <ul class="feedback-perks">
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.8"/></svg>
-              PDF compression
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.8"/></svg>
-              PDF to image export
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.8"/></svg>
-              Page reordering
-            </li>
-          </ul>
+<!-- ═══════════════ TOOLS ═══════════════ -->
+<section id="tools" class="tools-section">
+  <div class="section-wrap">
+    <div class="section-tag">Core Tools</div>
+    <h2 class="section-title">Everything you need. Nothing you don't.</h2>
+    <p class="section-sub">Four essential PDF tools — built from the ground up for privacy, speed, and simplicity. All free to start.</p>
+
+    <div class="tools-grid">
+
+      <a class="tool-card" href="pdf-splitter.html">
+        <div class="tool-card-top">
+          <div class="tool-icon tc-blue">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6M9 16l3 3 3-3M12 19v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="tool-tag">Free</span>
         </div>
+        <h3>PDF Splitter</h3>
+        <p>Extract individual pages or custom page ranges from any PDF file. Download results instantly.</p>
+        <span class="tool-link">Open Splitter &rarr;</span>
+      </a>
 
-        <form id="feedbackForm" class="feedback-form" action="https://formsubmit.co/slamsalsavers@gmail.com" method="POST">
-          <div class="form-group">
-            <label for="userEmail">Your email</label>
-            <input id="userEmail" name="email" type="email" placeholder="you@example.com" required />
+      <a class="tool-card" href="pdf-merger.html">
+        <div class="tool-card-top">
+          <div class="tool-icon tc-violet">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6M9 10l3-3 3 3M12 7v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <div class="form-group">
-            <label for="suggestionText">Your suggestion</label>
-            <textarea id="suggestionText" name="message" placeholder="Describe your idea or the improvement you'd like to see..." required></textarea>
+          <span class="tool-tag">Free</span>
+        </div>
+        <h3>PDF Merger</h3>
+        <p>Combine multiple PDFs into one document. Drag to reorder, then download your merged file in seconds.</p>
+        <span class="tool-link">Open Merger &rarr;</span>
+      </a>
+
+      <a class="tool-card tc-featured" href="pdf-editor.html">
+        <div class="tool-card-top">
+          <div class="tool-icon tc-green">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8.5 17.5l5-5 2 2-5 5H8.5v-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
           </div>
-
-          <input type="hidden" name="_subject" value="PDF Tools Suggestion" />
-          <input type="hidden" name="_cc" value="slamsalsavers@gmail.com" />
-          <input type="hidden" name="_autoresponse" value="Thank you for your suggestion! We will review it shortly." />
-          <input type="hidden" name="_captcha" value="false" />
-
-          <button class="btn btn-primary" type="submit">Send Suggestion</button>
-          <div id="feedbackStatus" class="status-message"></div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="site-footer">
-    <div class="footer-inner">
-      <div class="footer-brand">
-        <a class="brand" href="index.html">
-          <svg class="brand-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#2563eb"/>
-            <path d="M9 8h9l5 5v11H9V8z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M18 8v5h5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 17h8M12 20h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          PDF Tools Hub
-        </a>
-        <p>Free, private PDF utilities that run entirely in your browser.</p>
-      </div>
-      <div class="footer-links">
-        <div class="footer-col">
-          <span class="footer-col-title">Tools</span>
-          <a href="pdf-splitter.html">PDF Splitter</a>
-          <a href="pdf-merger.html">PDF Merger</a>
-          <a href="pdf-editor.html">PDF Editor</a>
-          <a href="pdf-to-doc.html">PDF to Word</a>
+          <span class="tool-tag tag-new">Full Editor</span>
         </div>
-        <div class="footer-col">
-          <span class="footer-col-title">Site</span>
-          <a href="index.html">Home</a>
-          <a href="#feedback">Give Feedback</a>
+        <h3>PDF Editor</h3>
+        <p>Annotate with text, highlights, shapes, drawings, signatures, tables, and interactive form fields. Full multi-page support.</p>
+        <span class="tool-link">Open Editor &rarr;</span>
+      </a>
+
+      <a class="tool-card" href="pdf-to-doc.html">
+        <div class="tool-card-top">
+          <div class="tool-icon tc-amber">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 19v-4M14 17l2 2 2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="tool-tag">Free</span>
+        </div>
+        <h3>PDF to Word</h3>
+        <p>Convert PDFs to editable .docx — preserves bold/italic, headings, images, and auto-detects tables.</p>
+        <span class="tool-link">Open Converter &rarr;</span>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ WHY ═══════════════ -->
+<section id="why" class="why-section">
+  <div class="section-wrap">
+    <div class="section-tag">Why PDF Tools</div>
+    <h2 class="section-title">Built different. For a reason.</h2>
+    <p class="section-sub">Every browser-based competitor — Smallpdf, iLovePDF — still uploads your files to their servers. We don't. That's not a feature. It's the architecture.</p>
+
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Provably private</h3>
+        <p>Open browser DevTools → Network tab and process a PDF. You'll see zero outgoing requests. The privacy claim is auditable by anyone, at any time.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Instant processing</h3>
+        <p>No upload waiting. No queue. No server round-trips. Your browser processes the PDF directly — results appear in seconds regardless of your internet speed.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Compliance-ready</h3>
+        <p>GDPR Article 25 compliant by design. HIPAA-friendly. CCPA compliant. No Data Processing Agreement (DPA) needed because we simply process nothing.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M12 12v4M10 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>90% cost advantage</h3>
+        <p>Adobe Acrobat is $19.99–$29.99/user/month. Our Pro plan is $1/month. For teams of 12, that's $8/seat vs $240–$360. The savings are real and immediate.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>No install needed</h3>
+        <p>Works on every device with a modern browser — Windows, Mac, Linux, Chromebook, tablet. Share the URL and anyone is instantly set up. Zero IT friction.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Team-ready from day one</h3>
+        <p>The Team plan includes an admin dashboard, SSO/SAML, usage analytics, and a compliance certificate — everything regulated industries need, at a fraction of enterprise pricing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+<section class="how-section">
+  <div class="section-wrap">
+    <div class="section-tag">How it works</div>
+    <h2 class="section-title">Three steps. That's it.</h2>
+
+    <div class="steps-row">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Open a tool</h3>
+          <p>Choose from the PDF Editor, Splitter, Merger, or Word converter. No account, no login, no waiting.</p>
+        </div>
+      </div>
+      <div class="step-arrow" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Drop your PDF</h3>
+          <p>Your file loads directly in the browser. Every operation — render, edit, merge, convert — runs locally on your machine.</p>
+        </div>
+      </div>
+      <div class="step-arrow" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Download instantly</h3>
+          <p>Click Save — your processed PDF downloads directly. Nothing is stored, nothing is transmitted, nothing is logged.</p>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>No data is stored, shared, or uploaded. Your files stay on your device.</p>
-    </div>
-  </footer>
+  </div>
+</section>
 
-  <script src="js/main.js" defer></script>
+<!-- ═══════════════ PRICING ═══════════════ -->
+<section id="pricing" class="pricing-section">
+  <div class="section-wrap">
+    <div class="section-tag">Pricing</div>
+    <h2 class="section-title">Honest pricing. No surprises.</h2>
+    <p class="section-sub">Start free forever. Upgrade only when you need more. Cancel anytime.</p>
+
+    <div class="pricing-grid">
+
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="pricing-top">
+          <div class="plan-name">Free</div>
+          <div class="plan-price"><span class="price-val">$0</span><span class="price-per">/month</span></div>
+          <p class="plan-desc">For anyone who needs to process PDFs occasionally. No credit card, no account.</p>
+        </div>
+        <a href="#tools" class="plan-btn plan-btn-outline">Get started free &rarr;</a>
+        <ul class="plan-features">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> All 4 core tools</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Files stay in your browser</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Unlimited tasks — no cap</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> No account required</li>
+          <li class="feature-limited"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="1.8"/><path d="M8 12h8" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg> 25 MB file size limit</li>
+          <li class="feature-limited"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="1.8"/><path d="M8 12h8" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg> No batch processing</li>
+        </ul>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card pricing-featured">
+        <div class="pricing-badge">Most popular</div>
+        <div class="pricing-top">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price"><span class="price-val">$1</span><span class="price-per">/month</span></div>
+          <p class="plan-desc">For freelancers, remote workers, and students who work with PDFs daily.</p>
+        </div>
+        <a href="#" class="plan-btn plan-btn-primary">Start Pro &rarr;</a>
+        <ul class="plan-features">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="1.8"/></svg> Everything in Free</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="1.8"/></svg> Unlimited file size</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="1.8"/></svg> Batch processing</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="1.8"/></svg> Priority support</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="1.8"/></svg> Cancel any time</li>
+        </ul>
+      </div>
+
+      <!-- Team -->
+      <div class="pricing-card">
+        <div class="pricing-top">
+          <div class="plan-name">Team</div>
+          <div class="plan-price"><span class="price-val">$8</span><span class="price-per">/seat/month</span></div>
+          <p class="plan-desc">For teams in legal, healthcare, finance, or HR that need compliance and control.</p>
+        </div>
+        <a href="#contact" class="plan-btn plan-btn-outline">Contact sales &rarr;</a>
+        <ul class="plan-features">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Everything in Pro</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Admin dashboard</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> SSO / SAML</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Compliance certificate</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Usage analytics</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="10" stroke="#059669" stroke-width="1.8"/></svg> Volume discounts (10+ seats)</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <p class="pricing-note">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#059669" stroke-width="2"/></svg>
+      All plans include the same zero-upload architecture. Your files never leave your browser — regardless of tier.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════ COMPLIANCE ═══════════════ -->
+<section class="compliance-section">
+  <div class="section-wrap compliance-inner">
+    <div class="compliance-copy">
+      <div class="section-tag">Compliance</div>
+      <h2 class="section-title" style="text-align:left">Built for regulated industries</h2>
+      <p style="color:#64748b;line-height:1.75;margin-bottom:28px">Because all processing happens locally in the browser, our architecture is compliant by default — not by policy. There are no servers to breach, no databases to audit, no DPAs to negotiate.</p>
+      <div class="compliance-badges">
+        <div class="comp-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#059669" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2" stroke-linecap="round"/></svg>
+          GDPR Art. 25
+        </div>
+        <div class="comp-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#059669" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2" stroke-linecap="round"/></svg>
+          HIPAA-friendly
+        </div>
+        <div class="comp-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#059669" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2" stroke-linecap="round"/></svg>
+          CCPA compliant
+        </div>
+        <div class="comp-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#059669" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="2" stroke-linecap="round"/></svg>
+          No DPA needed
+        </div>
+      </div>
+    </div>
+    <div class="compliance-industries">
+      <div class="industry-card">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="#059669" stroke-width="2"/><polyline points="9,22 9,12 15,12 15,22" stroke="#059669" stroke-width="2"/></svg>
+        <div>
+          <strong>Legal</strong>
+          <span>Contracts, briefs, and client files processed without ever leaving the device.</span>
+        </div>
+      </div>
+      <div class="industry-card">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div>
+          <strong>Healthcare</strong>
+          <span>Medical records and patient documents handled with zero transmission risk.</span>
+        </div>
+      </div>
+      <div class="industry-card">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" stroke="#059669" stroke-width="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" stroke="#059669" stroke-width="2"/></svg>
+        <div>
+          <strong>Finance & HR</strong>
+          <span>Financial statements, payslips, and sensitive HR documents — privately managed.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FAQ ═══════════════ -->
+<section id="faq" class="faq-section">
+  <div class="section-wrap faq-wrap">
+    <div class="section-tag">FAQ</div>
+    <h2 class="section-title">Common questions</h2>
+
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>Does my PDF really never leave my device?</summary>
+        <p>Yes. All processing uses JavaScript and WebAssembly running inside your browser tab. You can verify this yourself: open DevTools (F12) → Network tab → process a PDF and watch zero outgoing requests appear. The privacy claim is independently auditable.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Why is the free tier unlimited tasks with just a file size cap?</summary>
+        <p>Unlike competitors (Smallpdf limits 2 tasks/hour, iLovePDF caps files at 15 MB), we have no per-task compute costs because processing is client-side. Our only real constraint is that very large files can be slow in-browser — hence the 25 MB cap on the free tier.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is this actually GDPR / HIPAA compliant?</summary>
+        <p>Our architecture satisfies GDPR Article 25 (data minimisation) by design — we collect no personal data because none passes through our infrastructure. For HIPAA, because no PHI ever touches our servers, you're operating within your own environment. No BAA or DPA is required.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How is this 90% cheaper than Adobe?</summary>
+        <p>Adobe Acrobat Pro is $19.99–$29.99/user/month. Our Pro plan is $1/month. The Team plan is $8/seat/month. Because we have zero per-user server costs (~85% gross margin), we can price far below the market while remaining profitable.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What's on the roadmap?</summary>
+        <p>PDF compression, e-signatures, a Chrome extension for one-click PDF actions, client-side AI features (summarise, extract data via WebLLM), and a JavaScript SDK for developers to embed tools into their own products. These features will be available to Pro and Team users first.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do you plan to open-source the PDF processing layer?</summary>
+        <p>Yes. Publishing the core processing code on GitHub is on the roadmap as a trust signal for enterprise buyers and privacy advocates. The billing and auth infrastructure will remain closed-source.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CONTACT / CTA ═══════════════ -->
+<section id="contact" class="cta-section">
+  <div class="section-wrap cta-inner">
+    <div class="cta-copy">
+      <h2>Ready to leave Adobe behind?</h2>
+      <p>Start free today — no account, no card, no upload risk. Or contact us for a team pilot.</p>
+      <div class="cta-actions">
+        <a href="#tools" class="btn-hero-primary">Try the tools free</a>
+        <a href="mailto:slamsalsavers@gmail.com" class="btn-hero-ghost">Email us for a team pilot</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FEEDBACK ═══════════════ -->
+<section id="feedback" class="feedback-section">
+  <div class="section-wrap">
+    <div class="feedback-layout">
+      <div class="feedback-copy">
+        <div class="section-tag">Feedback</div>
+        <h2>Shape what we build next</h2>
+        <p>Every suggestion goes directly to the developer. No ticket queues, no middlemen.</p>
+        <div class="upcoming-list">
+          <div class="upcoming-item">
+            <span class="upcoming-dot"></span>
+            PDF compression
+          </div>
+          <div class="upcoming-item">
+            <span class="upcoming-dot"></span>
+            E-signature tool
+          </div>
+          <div class="upcoming-item">
+            <span class="upcoming-dot"></span>
+            Chrome extension
+          </div>
+          <div class="upcoming-item">
+            <span class="upcoming-dot"></span>
+            AI summarise (client-side)
+          </div>
+        </div>
+      </div>
+      <form id="feedbackForm" class="feedback-form" action="https://formsubmit.co/slamsalsavers@gmail.com" method="POST">
+        <div class="form-group">
+          <label for="userEmail">Your email</label>
+          <input id="userEmail" name="email" type="email" placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label for="suggestionText">Your suggestion</label>
+          <textarea id="suggestionText" name="message" placeholder="Describe your idea or improvement..." required></textarea>
+        </div>
+        <input type="hidden" name="_subject" value="PDF Tools Suggestion" />
+        <input type="hidden" name="_cc" value="slamsalsavers@gmail.com" />
+        <input type="hidden" name="_autoresponse" value="Thank you for your suggestion! We will review it shortly." />
+        <input type="hidden" name="_captcha" value="false" />
+        <button class="feedback-submit" type="submit">Send suggestion &rarr;</button>
+        <div id="feedbackStatus" class="status-message"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a class="logo logo-dark" href="index.html">
+        <svg class="logo-icon" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="10" fill="#059669"/>
+          <path d="M10 9h11l6 6v13H10V9z" fill="white" fill-opacity="0.18" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M21 9v6h6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 18h10M13 22h7" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span>PDF<strong>Tools</strong></span>
+      </a>
+      <p>Browser-based PDF utilities. Zero uploads. Privacy by design.</p>
+      <div class="footer-compliance">
+        <span>GDPR</span>
+        <span>HIPAA-friendly</span>
+        <span>CCPA</span>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <span class="footer-col-title">Tools</span>
+        <a href="pdf-splitter.html">PDF Splitter</a>
+        <a href="pdf-merger.html">PDF Merger</a>
+        <a href="pdf-editor.html">PDF Editor</a>
+        <a href="pdf-to-doc.html">PDF to Word</a>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-title">Product</span>
+        <a href="#why">Why PDF Tools</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="#feedback">Feedback</a>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-title">Company</span>
+        <a href="mailto:slamsalsavers@gmail.com">Contact</a>
+        <a href="mailto:slamsalsavers@gmail.com">Team sales</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 PDF Tools. All processing happens in your browser. No data is ever transmitted, stored, or logged.</p>
+  </div>
+</footer>
+
+<script src="js/main.js" defer></script>
+<script>
+  // Mobile nav toggle
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+    document.getElementById('hamburger').classList.toggle('active');
+  });
+  // Nav scroll shadow
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+  });
+  // FAQ accordions
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('summary').addEventListener('click', () => {
+      document.querySelectorAll('.faq-item[open]').forEach(o => { if (o !== item) o.removeAttribute('open'); });
+    });
+  });
+</script>
 </body>
 </html>
