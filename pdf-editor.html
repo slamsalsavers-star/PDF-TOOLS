@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF Editor — PDF Tools Hub</title>
+  <link rel="stylesheet" href="css/pdf-editor.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Pacifico&family=Sacramento&display=swap" rel="stylesheet" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Top bar ──────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <svg class="app-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14 2v6h6M9 13h6M9 17h4" stroke-linecap="round"/>
+      </svg>
+      <span class="app-name">PDF Editor</span>
+      <span class="topbar-vsep"></span>
+      <span class="status-dot"></span>
+      <span id="statusText" class="status-text">Open a PDF to begin.</span>
+    </div>
+
+    <div class="topbar-right">
+      <!-- No-file state -->
+      <div id="tbUpload" class="topbar-section">
+        <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none" />
+        <button class="btn btn-primary btn-sm" id="openBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Open PDF
+        </button>
+      </div>
+
+      <!-- File-loaded state — filename + all controls in one row -->
+      <div id="topbarFileInfo" class="topbar-section" style="display:none">
+        <span class="filename-chip" id="filenameBadge"></span>
+
+        <span class="topbar-vsep"></span>
+
+        <!-- Undo / Redo -->
+        <button class="tb-icon-btn" id="undoBtn" title="Undo  (Ctrl+Z)" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13a9 9 0 1 0 4-7.7" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tb-icon-btn" id="redoBtn" title="Redo  (Ctrl+Y)" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13a9 9 0 1 1-4-7.7" stroke-linecap="round"/></svg>
+        </button>
+
+        <span class="topbar-vsep"></span>
+
+        <!-- Zoom -->
+        <div class="tb-control-group">
+          <button class="tb-icon-btn" id="zoomOut" title="Zoom out">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14" stroke-linecap="round"/></svg>
+          </button>
+          <span class="tb-lbl" id="zoomLabel">100%</span>
+          <button class="tb-icon-btn" id="zoomIn" title="Zoom in">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <span class="topbar-vsep"></span>
+
+        <!-- Page navigation -->
+        <div class="tb-control-group">
+          <button class="tb-icon-btn" id="prevPage">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="tb-lbl" id="pageLabel">1 / 1</span>
+          <button class="tb-icon-btn" id="nextPage">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <span class="topbar-vsep"></span>
+
+        <button class="btn btn-success btn-sm" id="downloadBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Save PDF
+        </button>
+      </div>
+
+      <span class="topbar-vsep"></span>
+      <a href="index.html" class="back-link">← Hub</a>
+    </div>
+  </header>
+
+  <!-- ── Editor body (sidebar + canvas) ──────────────────────── -->
+  <div class="editor-body">
+
+    <!-- Left sidebar — tools & options only -->
+    <aside class="sidebar">
+      <div id="tbEdit" style="display:none">
+
+        <p class="sidebar-heading">Tools</p>
+        <div class="tool-group" role="toolbar" aria-label="Editor tools">
+          <button class="tool-btn active" data-tool="select" title="Select / Move  (V)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-7 1-4 7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Select
+          </button>
+          <button class="tool-btn" data-tool="text" title="Add / Edit Text  (T)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16" stroke-linecap="round"/></svg>
+            Text
+          </button>
+          <button class="tool-btn" data-tool="highlight" title="Highlight  (H)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h11v13H9zM5 7h4v9H5z" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 20h6" stroke-linecap="round"/></svg>
+            Highlight
+          </button>
+          <button class="tool-btn" data-tool="draw" title="Free Draw  (D)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z" stroke-linejoin="round"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke-linejoin="round"/></svg>
+            Draw
+          </button>
+          <button class="tool-btn" data-tool="rect" title="Rectangle  (R)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+            Rectangle
+          </button>
+          <button class="tool-btn" data-tool="eraser" title="Delete Object  (E)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l10-10 7 7-4.5 4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Eraser
+          </button>
+        </div>
+
+        <div class="side-sep"></div>
+        <p class="sidebar-heading">Options</p>
+
+        <div class="side-opts">
+          <div class="side-opt" id="optColor">
+            <span class="opt-lbl">Color</span>
+            <input type="color" id="colorPicker" value="#e74c3c" />
+          </div>
+          <div class="side-opt side-opt-col" id="optFontFamily" style="display:none">
+            <span class="opt-lbl">Font</span>
+            <select id="fontFamily" class="input">
+              <option value="Inter, system-ui, sans-serif">Inter</option>
+              <option value="Arial, Helvetica, sans-serif">Arial</option>
+              <option value="'Times New Roman', Times, serif">Times New Roman</option>
+              <option value="'Courier New', Courier, monospace">Courier New</option>
+              <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+              <option value="Verdana, Geneva, sans-serif">Verdana</option>
+              <option value="Impact, Charcoal, sans-serif">Impact</option>
+            </select>
+          </div>
+          <div class="side-opt" id="optFontSize" style="display:none">
+            <span class="opt-lbl">Size</span>
+            <select id="fontSize" class="input input-sm">
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18" selected>18</option>
+              <option value="24">24</option>
+              <option value="32">32</option>
+              <option value="48">48</option>
+              <option value="64">64</option>
+            </select>
+          </div>
+          <!-- Alignment — text only -->
+          <div class="side-opt" id="optTextAlign" style="display:none">
+            <span class="opt-lbl">Align</span>
+            <div class="fmt-btns">
+              <button class="fmt-btn active" data-align="left" title="Align left">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h12M3 18h15" stroke-linecap="round"/></svg>
+              </button>
+              <button class="fmt-btn" data-align="center" title="Center">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M6 12h12M4.5 18h15" stroke-linecap="round"/></svg>
+              </button>
+              <button class="fmt-btn" data-align="right" title="Align right">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M9 12h12M6 18h15" stroke-linecap="round"/></svg>
+              </button>
+              <button class="fmt-btn" data-align="justify" title="Justify">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Style toggles — text only -->
+          <div class="side-opt" id="optTextStyle" style="display:none">
+            <span class="opt-lbl">Style</span>
+            <div class="fmt-btns">
+              <button class="fmt-btn fmt-bold"   id="fmtBold"      title="Bold">B</button>
+              <button class="fmt-btn fmt-italic" id="fmtItalic"    title="Italic">I</button>
+              <button class="fmt-btn fmt-under"  id="fmtUnderline" title="Underline">U</button>
+              <button class="fmt-btn fmt-strike" id="fmtStrike"    title="Strikethrough">S</button>
+              <button class="fmt-btn fmt-over"   id="fmtOverline"  title="Overline">O</button>
+            </div>
+          </div>
+
+          <!-- Line height — text only -->
+          <div class="side-opt side-opt-col" id="optLineHeight" style="display:none">
+            <span class="opt-lbl">Line height <span id="lineHeightVal">1.2</span></span>
+            <input type="range" id="lineHeightSlider" min="1" max="3" step="0.1" value="1.16" />
+          </div>
+
+          <!-- Letter spacing — text only -->
+          <div class="side-opt side-opt-col" id="optLetterSpacing" style="display:none">
+            <span class="opt-lbl">Letter spacing <span id="letterSpacingVal">0</span></span>
+            <input type="range" id="letterSpacingSlider" min="-100" max="800" step="10" value="0" />
+          </div>
+
+          <!-- Text highlight / background — text only -->
+          <div class="side-opt" id="optTextHighlight" style="display:none">
+            <span class="opt-lbl">Highlight</span>
+            <div class="fmt-btns">
+              <input type="color" id="textBgColor" value="#fef08a" title="Highlight color" />
+              <button class="fmt-btn" id="clearTextBg" title="Remove highlight">✕</button>
+            </div>
+          </div>
+
+          <!-- Opacity — any selected object -->
+          <div class="side-opt side-opt-col" id="optOpacity" style="display:none">
+            <span class="opt-lbl">Opacity <span id="opacityVal">100</span>%</span>
+            <input type="range" id="opacitySlider" min="0" max="100" step="1" value="100" />
+          </div>
+
+          <div class="side-opt side-opt-col" id="optBrush" style="display:none">
+            <span class="opt-lbl">Width <span id="brushVal">3</span>px</span>
+            <input type="range" id="brushSize" min="1" max="24" value="3" />
+          </div>
+        </div>
+
+        <div class="side-sep"></div>
+        <button class="sig-sidebar-btn" id="openSigBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 17c2-4 4-6 6-6s3 3 5 3 5-3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 21h18" stroke-linecap="round"/>
+          </svg>
+          Add Signature
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- Canvas area -->
+    <div class="canvas-area">
+      <div class="upload-overlay" id="uploadOverlay">
+        <div class="upload-zone" id="uploadZone">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 2v6h6M12 11v6M9 14l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3>Drop your PDF here</h3>
+          <p>or click to browse</p>
+        </div>
+      </div>
+
+      <div class="canvas-scroll" id="canvasScroll" style="display:none">
+        <div class="canvas-spacer" id="canvasSpacer">
+          <div class="canvas-outer" id="canvasOuter">
+            <canvas id="editorCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Signature modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="sigModal" style="display:none" role="dialog" aria-modal="true" aria-label="Add Signature">
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 17c2-4 4-6 6-6s3 3 5 3 5-3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 21h18" stroke-linecap="round"/>
+        </svg>
+        Add Signature
+      </div>
+      <button class="modal-close-btn" id="sigClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="sig-tabs">
+      <button class="sig-tab active" data-sigtab="draw">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7-3-3-7 7v3h3z" stroke-linejoin="round"/></svg>
+        Draw
+      </button>
+      <button class="sig-tab" data-sigtab="type">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16" stroke-linecap="round"/></svg>
+        Type
+      </button>
+    </div>
+
+    <!-- Draw panel -->
+    <div id="sigPanelDraw" class="sig-panel">
+      <div class="sig-canvas-wrap">
+        <canvas id="sigCanvas" width="476" height="160"></canvas>
+      </div>
+      <p class="sig-hint">Draw your signature above</p>
+    </div>
+
+    <!-- Type panel -->
+    <div id="sigPanelType" class="sig-panel" style="display:none">
+      <input type="text" id="sigTypeInput" class="sig-text-input" placeholder="Type your name or initials…" maxlength="60" />
+      <div class="sig-font-grid">
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Dancing Script" checked />
+          <span style="font-family:'Dancing Script',cursive">Signature</span>
+        </label>
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Great Vibes" />
+          <span style="font-family:'Great Vibes',cursive">Signature</span>
+        </label>
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Pacifico" />
+          <span style="font-family:'Pacifico',cursive">Signature</span>
+        </label>
+        <label class="sig-font-opt">
+          <input type="radio" name="sigFont" value="Sacramento" />
+          <span style="font-family:'Sacramento',cursive">Signature</span>
+        </label>
+      </div>
+      <div class="sig-type-preview" id="sigTypePreview">Your Signature</div>
+    </div>
+
+    <!-- Footer: color + actions -->
+    <div class="sig-footer">
+      <label class="sig-color-row">
+        <span class="opt-lbl">Color</span>
+        <input type="color" id="sigColorPicker" value="#1e293b" />
+      </label>
+      <div class="sig-footer-btns">
+        <button class="btn btn-ghost-outline" id="sigClearBtn">Clear</button>
+        <button class="btn btn-primary" id="sigPlaceBtn">
+          Place on PDF
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast-root"></div>
+<script src="js/pdf-editor.js" defer></script>
+</body>
+</html>
