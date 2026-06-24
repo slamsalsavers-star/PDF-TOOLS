@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account — PDF Tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #7c3aed; --primary-dark: #6d28d9; --primary-light: #ede9fe;
+      --bg: #faf5ff; --surface: #fff; --border: #ede9fe; --border-s: #ddd6fe;
+      --text: #1e1b4b; --text-2: #312e81; --text-muted: #6b7280;
+      --success: #059669; --danger: #dc2626; --warning: #d97706;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+    /* Top nav */
+    .topnav { background: var(--surface); border-bottom: 1px solid var(--border); height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 50; }
+    .topnav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; text-decoration: none; color: var(--text); }
+    .topnav-brand-icon { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .topnav-brand-icon svg { color: #fff; }
+    .topnav-right { display: flex; align-items: center; gap: 12px; }
+    .topnav-user { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .btn-logout { padding: 6px 13px; border: 1px solid var(--border); border-radius: 7px; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: background .14s; }
+    .btn-logout:hover { background: var(--bg); color: var(--danger); border-color: #fca5a5; }
+
+    /* Layout */
+    .layout { display: grid; grid-template-columns: 200px 1fr; min-height: calc(100vh - 56px); max-width: 1000px; margin: 0 auto; padding: 24px 16px; gap: 24px; }
+    .sidenav { }
+    .sidenav-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 8px; color: var(--text-muted); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: background .14s, color .14s; margin-bottom: 2px; user-select: none; }
+    .sidenav-item:hover { background: var(--primary-light); color: var(--primary); }
+    .sidenav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+    .sidenav-item svg { flex-shrink: 0; }
+    .main { min-width: 0; }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(124,58,237,.05); margin-bottom: 20px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .card-title { font-size: 15px; font-weight: 700; }
+    .card-body { padding: 20px; }
+
+    .page-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+
+    /* Form */
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+    .form-input { width: 100%; padding: 9px 12px; border: 1px solid var(--border-s); border-radius: 8px; font-size: 13px; color: var(--text); background: var(--surface); outline: none; font-family: inherit; transition: border-color .14s, box-shadow .14s; }
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+    .form-input:disabled { background: #f5f3ff; color: var(--text-muted); cursor: not-allowed; }
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .14s; line-height: 1; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-danger  { background: transparent; color: var(--danger); border: 1px solid #fca5a5; }
+    .btn-danger:hover:not(:disabled) { background: #fee2e2; }
+    .btn-ghost   { background: transparent; border: 1px solid var(--border-s); color: var(--text-2); }
+    .btn-ghost:hover:not(:disabled) { background: var(--bg); }
+
+    /* Alert */
+    .alert { padding: 11px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-bottom: 16px; display: none; }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .alert-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert.show { display: block; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .badge-active    { background: #d1fae5; color: #065f46; }
+    .badge-trial     { background: #dbeafe; color: #1d4ed8; }
+    .badge-cancelled { background: #f1f5f9; color: #64748b; }
+    .badge-past_due  { background: #fef3c7; color: #92400e; }
+
+    /* Detail grid */
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+    .detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 3px; }
+    .detail-value { font-size: 14px; color: var(--text-2); font-weight: 500; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .loading { text-align: center; padding: 48px; color: var(--text-muted); }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border-s); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
+    .strength { height: 4px; border-radius: 4px; margin-top: 6px; background: var(--border); overflow: hidden; }
+    .strength-bar { height: 100%; border-radius: 4px; transition: width .2s, background .2s; width: 0%; }
+    .avatar-circle { width: 64px; height: 64px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 640px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidenav { display: flex; gap: 4px; flex-wrap: wrap; }
+      .form-row { grid-template-columns: 1fr; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<nav class="topnav">
+  <a href="../index.html" class="topnav-brand">
+    <div class="topnav-brand-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    PDF Tools
+  </a>
+  <div class="topnav-right">
+    <span class="topnav-user" id="topnav-user">—</span>
+    <button class="btn-logout" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidenav">
+    <div class="sidenav-item active" data-s="profile">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile
+    </div>
+    <div class="sidenav-item" data-s="subscription">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Subscription
+    </div>
+    <div class="sidenav-item" data-s="security">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Password
+    </div>
+  </aside>
+
+  <main class="main" id="main-content">
+    <div class="loading"><div class="spinner"></div></div>
+  </main>
+</div>
+
+<div id="toast-root" style="position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;"></div>
+
+<script src="../js/api-client.js"></script>
+<script>
+'use strict';
+
+let me = null, currentSection = '';
+
+async function init() {
+  me = requireAuth(['individual','corporate_employee','corporate_admin','admin_employee','super_admin']);
+  if (!me) return;
+
+  document.getElementById('topnav-user').textContent = me.first_name + ' ' + me.last_name;
+
+  document.querySelectorAll('.sidenav-item[data-s]').forEach(el => {
+    el.addEventListener('click', () => navigate(el.dataset.s));
+  });
+
+  const hash = location.hash.slice(1) || 'profile';
+  navigate(hash);
+}
+
+function navigate(s) {
+  currentSection = s;
+  location.hash  = s;
+  document.querySelectorAll('.sidenav-item').forEach(l => l.classList.toggle('active', l.dataset.s === s));
+  document.getElementById('main-content').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const map = { profile:renderProfile, subscription:renderSubscription, security:renderSecurity };
+  if (map[s]) map[s]().catch(err => { document.getElementById('main-content').innerHTML = `<p style="color:var(--text-muted);padding:24px">Failed to load: ${esc(err.message)}</p>`; });
+}
+
+window.addEventListener('hashchange', () => { const s = location.hash.slice(1)||'profile'; if (s!==currentSection) navigate(s); });
+
+function badge(val) { return `<span class="badge badge-${val}">${esc(val)}</span>`; }
+
+// ── Profile ────────────────────────────────────────────────────
+async function renderProfile() {
+  const res = await apiFetch('GET', '/user/profile');
+  const u = res.data;
+  me = u;
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-title">Profile</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Personal information</span></div>
+      <div class="card-body">
+        <div id="profile-alert" class="alert"></div>
+        <div class="avatar-circle" id="profile-av">${esc(u.first_name[0])}${esc(u.last_name[0])}</div>
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group"><label class="form-label">First name</label><input class="form-input" id="p-fn" value="${esc(u.first_name)}"></div>
+          <div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="p-ln" value="${esc(u.last_name)}"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email address</label><input class="form-input" id="p-email" type="email" value="${esc(u.email)}" disabled><div class="form-hint">Contact support to change your email.</div></div>
+        <hr class="divider">
+        <div class="detail-grid" style="margin-bottom:16px">
+          <div><div class="detail-label">Account type</div><div class="detail-value">${esc(u.user_type?.replace(/_/g,' '))}</div></div>
+          <div><div class="detail-label">Status</div><div class="detail-value">${esc(u.status)}</div></div>
+          <div><div class="detail-label">Email verified</div><div class="detail-value">${u.email_verified ? 'Yes' : 'No'}</div></div>
+          <div><div class="detail-label">Member since</div><div class="detail-value">${fmtDate(u.created_at)}</div></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+      </div>
+    </div>`;
+}
+
+async function saveProfile() {
+  const alertEl = document.getElementById('profile-alert');
+  alertEl.className = 'alert';
+  try {
+    const res = await apiFetch('PUT', '/user/profile', { first_name: document.getElementById('p-fn').value.trim(), last_name: document.getElementById('p-ln').value.trim() });
+    me = res.data || me;
+    S.user = me;
+    document.getElementById('profile-av').textContent = me.first_name[0] + me.last_name[0];
+    document.getElementById('topnav-user').textContent = me.first_name + ' ' + me.last_name;
+    alertEl.textContent = 'Profile updated successfully.';
+    alertEl.className   = 'alert alert-success show';
+  } catch(e) {
+    alertEl.textContent = e.message || 'Failed to update profile.';
+    alertEl.className   = 'alert alert-error show';
+  }
+}
+
+// ── Subscription ───────────────────────────────────────────────
+async function renderSubscription() {
+  const res = await apiFetch('GET', '/user/subscription').catch(() => ({ data: null }));
+  const s = res.data;
+
+  if (!s) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="page-title">Subscription</div>
+      <div class="card"><div class="card-body">
+        <p style="color:var(--text-muted);margin-bottom:16px">You don't have an active subscription yet.</p>
+        <a href="../index.html#pricing" class="btn btn-primary">View plans</a>
+      </div></div>`;
+    return;
+  }
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-title">Subscription</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">${esc(s.plan_name)}</span>${badge(s.status)}</div>
+      <div class="card-body">
+        <div id="sub-alert" class="alert"></div>
+        <div class="detail-grid">
+          <div><div class="detail-label">Status</div><div class="detail-value">${badge(s.status)}</div></div>
+          <div><div class="detail-label">Billing cycle</div><div class="detail-value">${esc(s.billing_cycle||'—')}</div></div>
+          <div><div class="detail-label">Start date</div><div class="detail-value">${fmtDate(s.current_period_start)}</div></div>
+          <div><div class="detail-label">Renewal date</div><div class="detail-value">${fmtDate(s.current_period_end)}</div></div>
+          <div><div class="detail-label">Auto-renews</div><div class="detail-value">${s.cancel_at_period_end ? 'No (will cancel)' : 'Yes'}</div></div>
+          ${s.trial_ends_at ? `<div><div class="detail-label">Trial ends</div><div class="detail-value">${fmtDate(s.trial_ends_at)}</div></div>` : ''}
+        </div>
+        ${s.status === 'active' && !s.cancel_at_period_end ? `<hr class="divider"><button class="btn btn-danger" onclick="cancelSubscription('${esc(s.id)}')">Cancel subscription</button><p style="font-size:12px;color:var(--text-muted);margin-top:8px">Your subscription stays active until ${fmtDate(s.current_period_end)}, then won't renew.</p>` : ''}
+        ${s.cancel_at_period_end ? `<div style="margin-top:16px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">Your subscription is set to cancel on ${fmtDate(s.current_period_end)}.</div>` : ''}
+      </div>
+    </div>`;
+}
+
+async function cancelSubscription(id) {
+  if (!confirm('Cancel your subscription? You keep access until the end of the billing period.')) return;
+  const alertEl = document.getElementById('sub-alert');
+  try {
+    await apiFetch('POST', `/user/subscription/${id}/cancel`);
+    alertEl.textContent = 'Subscription cancelled. You keep access until the period ends.';
+    alertEl.className   = 'alert alert-success show';
+    setTimeout(() => renderSubscription(), 1500);
+  } catch(e) {
+    alertEl.textContent = e.message;
+    alertEl.className   = 'alert alert-error show';
+  }
+}
+
+// ── Security / Change password ─────────────────────────────────
+async function renderSecurity() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-title">Change Password</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Update password</span></div>
+      <div class="card-body" style="max-width:420px">
+        <div id="pw-alert" class="alert"></div>
+        <div class="form-group"><label class="form-label">Current password</label><input class="form-input" id="pw-current" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <div class="form-group">
+          <label class="form-label">New password</label>
+          <input class="form-input" id="pw-new" type="password" placeholder="••••••••" autocomplete="new-password" oninput="updateStrength(this.value)">
+          <div class="strength"><div class="strength-bar" id="pw-bar"></div></div>
+          <div class="form-hint" id="pw-hint">Min. 8 characters</div>
+        </div>
+        <div class="form-group"><label class="form-label">Confirm new password</label><input class="form-input" id="pw-confirm" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+        <button class="btn btn-primary" onclick="changePassword()">Update password</button>
+      </div>
+    </div>`;
+}
+
+function updateStrength(v) {
+  let score = 0;
+  if (v.length >= 8)  score++;
+  if (v.length >= 12) score++;
+  if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^a-zA-Z0-9]/.test(v)) score++;
+  const colors = ['#dc2626','#f59e0b','#f59e0b','#059669','#059669'];
+  const labels = ['Too short','Weak','Fair','Strong','Very strong'];
+  document.getElementById('pw-bar').style.width = (score*20) + '%';
+  document.getElementById('pw-bar').style.background = colors[Math.max(0,score-1)] || '#e2e8f0';
+  document.getElementById('pw-hint').textContent = v.length ? labels[Math.max(0,score-1)] : 'Min. 8 characters';
+}
+
+async function changePassword() {
+  const alertEl  = document.getElementById('pw-alert');
+  const current  = document.getElementById('pw-current').value;
+  const newPw    = document.getElementById('pw-new').value;
+  const confirm  = document.getElementById('pw-confirm').value;
+  alertEl.className = 'alert';
+
+  if (!current)           { showPwAlert('Enter your current password.','error'); return; }
+  if (newPw.length < 8)   { showPwAlert('New password must be at least 8 characters.','error'); return; }
+  if (newPw !== confirm)  { showPwAlert('Passwords do not match.','error'); return; }
+
+  try {
+    await apiFetch('POST', '/user/change-password', { current_password: current, new_password: newPw });
+    showPwAlert('Password updated successfully.', 'success');
+    document.getElementById('pw-current').value = '';
+    document.getElementById('pw-new').value     = '';
+    document.getElementById('pw-confirm').value = '';
+    document.getElementById('pw-bar').style.width = '0%';
+    document.getElementById('pw-hint').textContent = 'Min. 8 characters';
+  } catch(e) {
+    showPwAlert(e.message || 'Failed to update password.', 'error');
+  }
+}
+
+function showPwAlert(msg, type) {
+  const el = document.getElementById('pw-alert');
+  el.textContent = msg;
+  el.className   = `alert alert-${type} show`;
+}
+
+init();
+</script>
+</body>
+</html>

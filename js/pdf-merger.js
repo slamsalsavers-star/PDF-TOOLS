@@ -1,5 +1,6 @@
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+// utils.js loaded before this file provides:
+// ensurePdf, formatSize, downloadBlob, setStatus, setProgress, toast
+// pdfjsLib.GlobalWorkerOptions.workerSrc is also set there.
 
 const state = {
   files: [],  // { id, name, file, pdfDoc, previewDoc, pageCount }
@@ -7,24 +8,6 @@ const state = {
 };
 
 // ── Utilities ──────────────────────────────────────────────────────────────
-
-function ensurePdf(name) { return name.endsWith('.pdf') ? name : `${name}.pdf`; }
-
-function setStatus(msg, type = '') {
-  $('#statusBar').removeClass('is-loading is-success is-error').addClass(type ? `is-${type}` : '');
-  $('#statusText').text(msg);
-}
-
-function setProgress(pct) {
-  if (pct == null) { $('#progressWrap').hide(); $('#progressBar').css('width', '0%'); }
-  else             { $('#progressWrap').show(); $('#progressBar').css('width', `${pct}%`); }
-}
-
-function showToast(msg, type = 'info', ms = 3500) {
-  const t = $(`<div class="toast toast-${type}">${msg}</div>`);
-  $('#toast-root').append(t);
-  setTimeout(() => t.fadeOut(280, function () { $(this).remove(); }), ms);
-}
 
 function setControls(on) {
   $('#mergeBtn, #clearBtn').prop('disabled', !on);
@@ -34,25 +17,16 @@ function totalPages() {
   return state.files.reduce((sum, f) => sum + f.pageCount, 0);
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 // ── Thumbnail ──────────────────────────────────────────────────────────────
 
 async function renderThumbnail(entry, canvas) {
   try {
     const page     = await entry.previewDoc.getPage(1);
     const viewport = page.getViewport({ scale: 0.45 });
-    canvas.width  = viewport.width;
-    canvas.height = viewport.height;
+    canvas.width   = viewport.width;
+    canvas.height  = viewport.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-  } catch (_) {
-    // silently skip if thumbnail fails
-  }
+  } catch (_) { /* silently skip */ }
 }
 
 // ── File Loading ───────────────────────────────────────────────────────────
@@ -68,7 +42,7 @@ async function loadSingleFile(file) {
     entry.previewDoc = await pdfjsLib.getDocument({ data: buf }).promise;
     entry.pageCount  = entry.pdfDoc.getPageCount();
   } catch (_) {
-    showToast(`Could not load "${file.name}" — it may be corrupt or password-protected.`, 'error');
+    toast(`Could not load "${file.name}" — it may be corrupt or password-protected.`, 'error');
     return null;
   }
 
@@ -80,7 +54,7 @@ async function handleFiles(fileList) {
   const pdfs = Array.from(fileList).filter(f => f.type === 'application/pdf');
 
   if (!pdfs.length) {
-    showToast('No PDF files found. Please select valid PDF files.', 'warning');
+    toast('No PDF files found. Please select valid PDF files.', 'warning');
     return;
   }
 
@@ -135,7 +109,6 @@ function createFileCard(entry, index) {
 
   const card = $('<div>').addClass('file-card').attr('data-id', entry.id);
 
-  // Drag handle
   const handle = $('<div>').addClass('drag-handle').html(
     `<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
       <circle cx="4" cy="3"  r="1.5"/><circle cx="8" cy="3"  r="1.5"/>
@@ -144,19 +117,16 @@ function createFileCard(entry, index) {
     </svg>`
   );
 
-  // Thumbnail
   const thumb  = $('<div>').addClass('file-thumb');
   const canvas = document.createElement('canvas');
   thumb.append(canvas);
 
-  // Info
   const info = $('<div>').addClass('file-info');
   info.append(
     $('<div>').addClass('file-name').text(entry.name),
     $('<div>').addClass('file-meta').text(`${entry.pageCount} page${entry.pageCount !== 1 ? 's' : ''}`)
   );
 
-  // Controls
   const controls = $('<div>').addClass('file-controls');
 
   const upBtn = $('<button>').addClass('btn btn-ghost btn-sm btn-icon').prop('disabled', isFirst).html(
@@ -177,7 +147,7 @@ function createFileCard(entry, index) {
   controls.append(upBtn, downBtn, removeBtn);
   card.append(handle, thumb, info, controls);
 
-  // ── Drag-and-drop reordering ──
+  // Drag-and-drop reordering
   card.attr('draggable', 'true');
 
   card.on('dragstart', function (e) {
@@ -185,26 +155,21 @@ function createFileCard(entry, index) {
     e.originalEvent.dataTransfer.effectAllowed = 'move';
     setTimeout(() => $(this).addClass('dragging'), 0);
   });
-
   card.on('dragend', function () {
     $(this).removeClass('dragging');
     $('.file-card').removeClass('drag-over');
   });
-
   card.on('dragover', function (e) {
     e.preventDefault();
     e.originalEvent.dataTransfer.dropEffect = 'move';
     $('.file-card').removeClass('drag-over');
     $(this).addClass('drag-over');
   });
-
   card.on('dragleave', function (e) {
-    // Only clear if leaving the card entirely (not entering a child)
     if (!$(this).is($(e.relatedTarget).closest('.file-card'))) {
       $(this).removeClass('drag-over');
     }
   });
-
   card.on('drop', function (e) {
     e.preventDefault();
     $(this).removeClass('drag-over');
@@ -241,9 +206,8 @@ function removeFile(id) {
   renderFileList();
 
   if (state.files.length) {
-    const total = totalPages();
     setStatus(
-      `${state.files.length} file(s) · ${total} page(s) total. Drag to reorder, then click Merge.`,
+      `${state.files.length} file(s) · ${totalPages()} page(s) total. Drag to reorder, then click Merge.`,
       'success'
     );
   }
@@ -261,8 +225,8 @@ async function mergePdfs() {
     const merged = await PDFLib.PDFDocument.create();
 
     for (let i = 0; i < state.files.length; i++) {
-      const entry  = state.files[i];
-      const pages  = await merged.copyPages(entry.pdfDoc, entry.pdfDoc.getPageIndices());
+      const entry = state.files[i];
+      const pages = await merged.copyPages(entry.pdfDoc, entry.pdfDoc.getPageIndices());
       pages.forEach(p => merged.addPage(p));
       setProgress(Math.round(((i + 1) / state.files.length) * 100));
     }
@@ -275,18 +239,18 @@ async function mergePdfs() {
     downloadBlob(blob, fileName);
     setProgress(null);
     setStatus(`Downloaded "${fileName}" — ${totalPages()} pages from ${state.files.length} file(s).`, 'success');
-    showToast('PDF merged and downloaded.', 'success');
+    toast('PDF merged and downloaded.', 'success');
   } catch (err) {
     setProgress(null);
     setStatus('Merge failed. One or more files may be unreadable.', 'error');
-    showToast('Merge failed.', 'error');
+    toast('Merge failed.', 'error');
     console.error(err);
   }
 }
 
 // ── Upload Zone ────────────────────────────────────────────────────────────
 
-const uploadZone   = document.getElementById('uploadZone');
+const uploadZone    = document.getElementById('uploadZone');
 const pdfFilesInput = document.getElementById('pdfFiles');
 
 uploadZone.addEventListener('click', () => pdfFilesInput.click());
@@ -296,7 +260,6 @@ uploadZone.addEventListener('dragover', e => {
   e.preventDefault(); uploadZone.classList.add('drag-over');
 });
 uploadZone.addEventListener('dragleave', e => {
-  // Only remove class if leaving the zone entirely, not entering a child
   if (!uploadZone.contains(e.relatedTarget)) uploadZone.classList.remove('drag-over');
 });
 uploadZone.addEventListener('drop', e => {
@@ -304,7 +267,7 @@ uploadZone.addEventListener('drop', e => {
   handleFiles(e.dataTransfer.files);
 });
 
-// Prevent the file-list drag events from bubbling up to the upload zone
+// Prevent file-list drag events from bubbling up to the upload zone
 $('#fileList').on('dragover dragleave drop', function (e) { e.stopPropagation(); });
 
 // ── Event Wiring ───────────────────────────────────────────────────────────
@@ -313,7 +276,7 @@ $('#mergeBtn').on('click', mergePdfs);
 
 $('#clearBtn').on('click', function () {
   state.files.forEach(f => { if (f.previewDoc) f.previewDoc.destroy(); });
-  state.files = [];
+  state.files  = [];
   state.nextId = 0;
   pdfFilesInput.value = '';
   renderFileList();

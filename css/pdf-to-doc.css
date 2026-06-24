@@ -1,0 +1,37 @@
+/* pdf-to-doc.css — tool-specific styles only (shared.css loaded first) */
+
+/* ── Conversion Mode Toggle ── */
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+.mode-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.mode-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .mode-toggle { flex-direction: column; }
+}

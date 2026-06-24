@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — PDF Tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #4f46e5; --primary-dark: #4338ca; --primary-light: #ede9fe;
+      --bg: #f1f5f9; --surface: #fff; --border: #e2e8f0; --border-strong: #cbd5e1;
+      --text: #0f172a; --text-2: #334155; --text-muted: #64748b;
+      --success: #059669; --danger: #dc2626; --warning: #d97706;
+      --sb: #1e293b; --sb-text: #94a3b8;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+    .shell { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 240px; background: var(--sb); display: flex; flex-direction: column; position: fixed; inset-y: 0; left: 0; z-index: 100; overflow-y: auto; }
+    .sb-brand { padding: 18px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-brand-icon { width: 34px; height: 34px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sb-brand-icon svg { color: #fff; }
+    .sb-brand-text { font-size: 15px; font-weight: 800; color: #fff; }
+    .sb-nav { flex: 1; padding: 10px 8px; }
+    .sb-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: rgba(148,163,184,.5); padding: 14px 10px 4px; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; color: var(--sb-text); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: background .14s, color .14s; user-select: none; }
+    .nav-link:hover { background: rgba(255,255,255,.06); color: #e2e8f0; }
+    .nav-link.active { background: var(--primary); color: #fff; }
+    .nav-link svg { flex-shrink: 0; width: 16px; height: 16px; }
+    .sb-footer { padding: 12px; border-top: 1px solid rgba(255,255,255,.07); }
+    .sb-user { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+    .sb-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .sb-info { min-width: 0; }
+    .sb-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-role { font-size: 11px; color: var(--sb-text); }
+    .btn-logout { width: 100%; margin-top: 8px; padding: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 7px; color: var(--sb-text); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .14s, color .14s; }
+    .btn-logout:hover { background: rgba(220,38,38,.25); color: #fca5a5; border-color: rgba(220,38,38,.3); }
+
+    /* ── Main ── */
+    .main-wrap { margin-left: 240px; display: flex; flex-direction: column; min-height: 100vh; flex: 1; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    #topbar-title { font-size: 16px; font-weight: 700; }
+    .content { padding: 24px; flex: 1; }
+
+    /* ── Stats ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; align-items: flex-start; justify-content: space-between; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.1; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stat-icon-purple { background: var(--primary-light); color: var(--primary); }
+    .stat-icon-green  { background: #d1fae5; color: var(--success); }
+    .stat-icon-blue   { background: #dbeafe; color: #1d4ed8; }
+    .stat-icon-orange { background: #fef3c7; color: var(--warning); }
+
+    /* ── Card ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.05); margin-bottom: 20px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--border); }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-body { padding: 20px; }
+
+    /* ── Page header ── */
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .page-title { font-size: 20px; font-weight: 800; }
+    .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .filter-bar input, .filter-bar select { padding: 7px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); background: var(--surface); outline: none; }
+    .filter-bar input:focus, .filter-bar select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+    .filter-bar input { min-width: 200px; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); border-bottom: 2px solid var(--border); white-space: nowrap; background: #f8fafc; }
+    td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-2); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fafc; }
+    .td-actions { display: flex; gap: 5px; }
+    .td-mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-active       { background: #d1fae5; color: #065f46; }
+    .badge-inactive     { background: #f1f5f9; color: #475569; }
+    .badge-pending      { background: #fef3c7; color: #92400e; }
+    .badge-suspended    { background: #fee2e2; color: #991b1b; }
+    .badge-trial        { background: #dbeafe; color: #1d4ed8; }
+    .badge-past_due     { background: #fef3c7; color: #92400e; }
+    .badge-cancelled    { background: #f1f5f9; color: #64748b; }
+    .badge-super_admin         { background: #ede9fe; color: #4338ca; }
+    .badge-admin_employee      { background: #dbeafe; color: #1d4ed8; }
+    .badge-corporate_admin     { background: #d1fae5; color: #065f46; }
+    .badge-corporate_employee  { background: #ecfdf5; color: #047857; }
+    .badge-individual          { background: #f0f9ff; color: #0369a1; }
+    .badge-yes { background: #d1fae5; color: #065f46; }
+    .badge-no  { background: #f1f5f9; color: #64748b; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .14s; line-height: 1; }
+    .btn svg { flex-shrink: 0; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+    .btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text-2); }
+    .btn-ghost:hover:not(:disabled) { background: var(--bg); }
+    .btn-sm  { padding: 4px 9px; font-size: 12px; }
+    .btn-icon { padding: 5px 7px; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); background: var(--surface); outline: none; font-family: inherit; transition: border-color .14s, box-shadow .14s; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .form-err  { font-size: 12px; color: var(--danger); margin-top: 4px; }
+    .form-section { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+    /* ── Permissions grid ── */
+    .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .perm-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background .12s; }
+    .perm-item:hover { background: var(--bg); }
+    .perm-item input { cursor: pointer; }
+    .perm-item span { font-size: 12px; color: var(--text-2); font-family: 'SF Mono','Fira Code',monospace; }
+
+    /* ── Dialog / Modal ── */
+    .overlay { position: fixed; inset: 0; background: rgba(15,23,42,.6); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 500; padding: 16px; }
+    .overlay.hidden { display: none; }
+    .dialog { background: var(--surface); border-radius: 14px; box-shadow: 0 24px 60px rgba(15,23,42,.22); width: min(95vw, 540px); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+    .dialog-lg { width: min(95vw, 720px); }
+    .dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .dialog-head h3 { font-size: 15px; font-weight: 700; }
+    .dialog-head button { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 5px; display: flex; }
+    .dialog-head button:hover { background: var(--bg); color: var(--text); }
+    .dialog-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .dialog-alert { padding: 10px 13px; border-radius: 7px; font-size: 13px; margin-bottom: 14px; display: none; }
+    .dialog-alert.show { display: block; }
+    .dialog-alert-error { background: #fee2e2; color: #991b1b; }
+
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+    .pg-info { font-size: 13px; color: var(--text-muted); }
+    .pg-btns { display: flex; gap: 4px; }
+    .pg-btn { padding: 5px 11px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 13px; cursor: pointer; color: var(--text-2); transition: background .12s; }
+    .pg-btn:hover:not(:disabled) { background: var(--bg); }
+    .pg-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Misc ── */
+    .empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+    .empty svg { width: 40px; height: 40px; margin: 0 auto 12px; display: block; opacity: .3; }
+    .loading { text-align: center; padding: 48px; color: var(--text-muted); }
+    .spinner { display: inline-block; width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+    .detail-item { }
+    .detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 3px; }
+    .detail-value { font-size: 14px; color: var(--text-2); font-weight: 500; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { padding: 3px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; color: var(--text-2); font-family: 'SF Mono','Fira Code',monospace; }
+    .info-box { background: var(--primary-light); border: 1px solid #c4b5fd; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #4338ca; margin-bottom: 16px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeUp { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main-wrap { margin-left: 0; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <span class="sb-brand-text">PDF Tools</span>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Overview</div>
+      <div class="nav-link active" data-s="dashboard">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="sb-section">Manage</div>
+      <div class="nav-link" data-s="users">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users
+      </div>
+      <div class="nav-link" data-s="companies">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Companies
+      </div>
+      <div class="nav-link" data-s="roles">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Roles
+      </div>
+      <div class="sb-section">Billing</div>
+      <div class="nav-link" data-s="subscriptions">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Subscriptions
+      </div>
+      <div class="nav-link" data-s="plans">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Plans
+      </div>
+      <div class="sb-section">Reports</div>
+      <div class="nav-link" data-s="reports">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Revenue
+      </div>
+      <div class="nav-link" data-s="audit">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Logs
+      </div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar" id="sb-avatar">?</div>
+        <div class="sb-info">
+          <div class="sb-name" id="sb-name">—</div>
+          <div class="sb-role" id="sb-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <span id="topbar-title">Dashboard</span>
+      <a href="../index.html" style="font-size:13px;color:var(--text-muted);text-decoration:none;">← Main site</a>
+    </header>
+    <main class="content" id="content">
+      <div class="loading"><div class="spinner"></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay hidden" id="modal">
+  <div class="dialog" id="dialog">
+    <div class="dialog-head">
+      <h3 id="dialog-title"></h3>
+      <button onclick="closeModal()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="dialog-body" id="dialog-body"></div>
+    <div class="dialog-foot" id="dialog-foot"></div>
+  </div>
+</div>
+<div id="toast-root" style="position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;"></div>
+
+<script src="../js/api-client.js"></script>
+<script>
+'use strict';
+
+// ── Constants ──────────────────────────────────────────────────
+const PERMISSIONS = [
+  'users.view','users.create','users.edit','users.delete',
+  'companies.view','companies.create','companies.edit','companies.delete',
+  'roles.view','roles.manage',
+  'subscriptions.view','subscriptions.manage',
+  'reports.view','audit.view'
+];
+const USER_TYPES   = ['super_admin','admin_employee','corporate_admin','corporate_employee','individual'];
+const USER_STATUSES = ['active','inactive','suspended','pending'];
+const SUB_STATUSES  = ['active','trial','past_due','cancelled'];
+
+// ── State ──────────────────────────────────────────────────────
+let currentSection = '';
+let me = null;
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+  me = requireAuth(['super_admin','admin_employee']);
+  if (!me) return;
+
+  document.getElementById('sb-avatar').textContent = (me.first_name[0]+me.last_name[0]).toUpperCase();
+  document.getElementById('sb-name').textContent   = me.first_name + ' ' + me.last_name;
+  document.getElementById('sb-role').textContent   = me.user_type.replace(/_/g,' ');
+
+  document.querySelectorAll('.nav-link[data-s]').forEach(el => {
+    el.addEventListener('click', () => navigate(el.dataset.s));
+  });
+
+  const hash = location.hash.slice(1) || 'dashboard';
+  navigate(hash);
+}
+
+// ── Navigation ─────────────────────────────────────────────────
+const TITLES = { dashboard:'Dashboard', users:'Users', companies:'Companies', roles:'Roles', subscriptions:'Subscriptions', plans:'Plans', reports:'Revenue Reports', audit:'Audit Logs' };
+
+function navigate(s) {
+  currentSection = s;
+  location.hash  = s;
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.s === s));
+  document.getElementById('topbar-title').textContent = TITLES[s] || s;
+  document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const map = { dashboard:renderDashboard, users:renderUsers, companies:renderCompanies, roles:renderRoles, subscriptions:renderSubscriptions, plans:renderPlans, reports:renderReports, audit:renderAudit };
+  if (map[s]) map[s]().catch(err => { document.getElementById('content').innerHTML = `<div class="empty"><p>Failed to load: ${esc(err.message)}</p></div>`; });
+}
+
+window.addEventListener('hashchange', () => { const s = location.hash.slice(1)||'dashboard'; if (s!==currentSection) navigate(s); });
+
+// ── Modal helpers ──────────────────────────────────────────────
+function openModal(title, body, foot = '', large = false) {
+  document.getElementById('dialog-title').textContent = title;
+  document.getElementById('dialog-body').innerHTML    = body;
+  document.getElementById('dialog-foot').innerHTML    = foot || '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>';
+  document.getElementById('dialog').classList.toggle('dialog-lg', large);
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
+
+function dialogErr(msg) {
+  let el = document.getElementById('d-err');
+  if (!el) { el = document.createElement('div'); el.id='d-err'; el.className='dialog-alert dialog-alert-error'; document.getElementById('dialog-body').prepend(el); }
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Badge ──────────────────────────────────────────────────────
+function badge(val, cls) { return `<span class="badge badge-${cls||val}">${esc(val)}</span>`; }
+function statusBadge(s)  { return badge(s||'—', s); }
+function typeBadge(t)    { return badge(t?.replace(/_/g,' ')||'—', t); }
+
+// ── Pagination ─────────────────────────────────────────────────
+function renderPagination(meta, cb) {
+  if (!meta || meta.total_pages <= 1) return '';
+  const { page, total_pages, total } = meta;
+  const pages = [];
+  const start = Math.max(1, page-2), end = Math.min(total_pages, page+2);
+  if (start>1) pages.push(1,'…');
+  for (let i=start;i<=end;i++) pages.push(i);
+  if (end<total_pages) pages.push('…',total_pages);
+  const btns = pages.map(p => p==='…'
+    ? `<span class="pg-btn" style="cursor:default">…</span>`
+    : `<button class="pg-btn${p===page?' active':''}" onclick="(${cb})(${p})">${p}</button>`
+  ).join('');
+  return `<div class="pagination"><span class="pg-info">${total} total</span><div class="pg-btns"><button class="pg-btn" onclick="(${cb})(${page-1})" ${page<=1?'disabled':''}>‹</button>${btns}<button class="pg-btn" onclick="(${cb})(${page+1})" ${page>=total_pages?'disabled':''}>›</button></div></div>`;
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+async function renderDashboard() {
+  const [dash] = await Promise.all([apiFetch('GET','/admin/dashboard')]);
+  const d = dash.data;
+  const byType = d.users?.by_type || {};
+  const total  = Object.values(byType).reduce((a,b)=>a+(+b),0);
+
+  document.getElementById('content').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div><div class="stat-label">Total Users</div><div class="stat-value">${total}</div><div class="stat-sub">${d.users?.new_this_month||0} new this month</div></div><div class="stat-icon stat-icon-purple"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div></div>
+      <div class="stat-card"><div><div class="stat-label">Active Corp. Subs</div><div class="stat-value">${d.subscriptions?.corporate||0}</div><div class="stat-sub">company subscriptions</div></div><div class="stat-icon stat-icon-green"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div></div>
+      <div class="stat-card"><div><div class="stat-label">MRR</div><div class="stat-value">$${(d.mrr||0).toFixed(2)}</div><div class="stat-sub">monthly recurring revenue</div></div><div class="stat-icon stat-icon-blue"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+      <div class="stat-card"><div><div class="stat-label">Individual Subs</div><div class="stat-value">${d.subscriptions?.individual||0}</div><div class="stat-sub">individual subscriptions</div></div><div class="stat-icon stat-icon-orange"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Users by Type</span><button class="btn btn-sm btn-primary" onclick="navigate('users')">Manage users</button></div>
+      <div class="card-body">
+        <table><thead><tr><th>Type</th><th>Count</th><th></th></tr></thead><tbody>
+          ${Object.entries(byType).length ? Object.entries(byType).map(([t,c])=>`<tr><td>${typeBadge(t)}</td><td><strong>${c}</strong></td><td><button class="btn btn-sm btn-ghost" onclick="navigate('users')">View</button></td></tr>`).join('') : '<tr><td colspan="3" class="empty" style="padding:24px;text-align:center;color:var(--text-muted)">No users yet</td></tr>'}
+        </tbody></table>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// USERS
+// ══════════════════════════════════════════
+let usersPage = 1, usersFilter = {};
+
+async function renderUsers(page = 1) {
+  usersPage = page;
+  const params = { page, ...usersFilter };
+  const res = await apiFetch('GET', '/admin/users' + qs(params));
+  const rows = res.data || [], meta = res.meta || {};
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Users</div><div class="page-sub">${meta.total||0} total users</div></div>
+      <button class="btn btn-primary" onclick="showCreateUser()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add user</button>
+    </div>
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+        <div class="filter-bar" style="margin:0">
+          <input type="search" placeholder="Search email, name…" value="${esc(usersFilter.search||'')}" oninput="debounce(()=>{usersFilter.search=this.value;renderUsers(1)},300)()">
+          <select onchange="usersFilter.user_type=this.value;renderUsers(1)"><option value="">All types</option>${USER_TYPES.map(t=>`<option value="${t}" ${usersFilter.user_type===t?'selected':''}>${t.replace(/_/g,' ')}</option>`).join('')}</select>
+          <select onchange="usersFilter.status=this.value;renderUsers(1)"><option value="">All statuses</option>${USER_STATUSES.map(s=>`<option value="${s}" ${usersFilter.status===s?'selected':''}>${s}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Email</th><th>Name</th><th>Type</th><th>Status</th><th>Verified</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody>${rows.length ? rows.map(u=>`
+          <tr>
+            <td class="td-mono">${esc(u.email)}</td>
+            <td>${esc(u.first_name)} ${esc(u.last_name)}</td>
+            <td>${typeBadge(u.user_type)}</td>
+            <td>${statusBadge(u.status)}</td>
+            <td>${u.email_verified ? badge('yes','yes') : badge('no','no')}</td>
+            <td>${fmtDate(u.created_at)}</td>
+            <td><div class="td-actions">
+              <button class="btn btn-sm btn-ghost" onclick="showUserDetail('${esc(u.id)}')">View</button>
+              <button class="btn btn-sm btn-ghost" onclick="showEditUser('${esc(u.id)}')">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteUser('${esc(u.id)}','${esc(u.email)}')">Del</button>
+            </div></td>
+          </tr>`).join('') : '<tr><td colspan="7" class="empty" style="padding:32px;text-align:center;color:var(--text-muted)">No users found</td></tr>'}
+        </tbody></table>
+      </div>
+      ${renderPagination(meta, 'renderUsers')}
+    </div>`;
+}
+
+let _dt = {}; function debounce(fn, ms) { return function(...a) { clearTimeout(_dt[fn]); _dt[fn]=setTimeout(()=>fn(...a),ms); }; }
+
+async function showCreateUser() {
+  const roles = await apiFetch('GET','/admin/roles');
+  openModal('Add User', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">First name *</label><input class="form-input" id="u-fn" placeholder="First"></div><div class="form-group"><label class="form-label">Last name *</label><input class="form-input" id="u-ln" placeholder="Last"></div></div>
+    <div class="form-group"><label class="form-label">Email *</label><input class="form-input" id="u-email" type="email" placeholder="user@example.com"></div>
+    <div class="form-group"><label class="form-label">Password *</label><input class="form-input" id="u-pw" type="password" placeholder="Min 8 chars"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">User type *</label><select class="form-select" id="u-type">${USER_TYPES.map(t=>`<option value="${t}">${t.replace(/_/g,' ')}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="u-status">${USER_STATUSES.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></div>
+    </div>
+    ${(roles.data||[]).length ? `<div class="form-group"><label class="form-label">Assign role (optional)</label><select class="form-select" id="u-role"><option value="">— none —</option>${(roles.data||[]).map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select></div>` : ''}`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitCreateUser()">Create user</button>`);
+}
+
+async function submitCreateUser() {
+  const body = { email:document.getElementById('u-email').value.trim(), password:document.getElementById('u-pw').value, first_name:document.getElementById('u-fn').value.trim(), last_name:document.getElementById('u-ln').value.trim(), user_type:document.getElementById('u-type').value, status:document.getElementById('u-status').value };
+  try {
+    const res = await apiFetch('POST','/admin/users', body);
+    const roleEl = document.getElementById('u-role');
+    if (roleEl?.value) await apiFetch('POST',`/admin/users/${res.data.id}/roles`,{role_id:roleEl.value}).catch(()=>{});
+    closeModal(); toast('User created','success'); renderUsers(usersPage);
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function showEditUser(id) {
+  const u = (await apiFetch('GET',`/admin/users/${id}`)).data;
+  openModal('Edit User', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">First name</label><input class="form-input" id="eu-fn" value="${esc(u.first_name)}"></div><div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="eu-ln" value="${esc(u.last_name)}"></div></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">User type</label><select class="form-select" id="eu-type">${USER_TYPES.map(t=>`<option value="${t}" ${u.user_type===t?'selected':''}>${t.replace(/_/g,' ')}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="eu-status">${USER_STATUSES.map(s=>`<option value="${s}" ${u.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitEditUser('${id}')">Save changes</button>`);
+}
+
+async function submitEditUser(id) {
+  try {
+    await apiFetch('PUT',`/admin/users/${id}`,{first_name:document.getElementById('eu-fn').value.trim(),last_name:document.getElementById('eu-ln').value.trim(),user_type:document.getElementById('eu-type').value,status:document.getElementById('eu-status').value});
+    closeModal(); toast('User updated','success'); renderUsers(usersPage);
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function showUserDetail(id) {
+  const u = (await apiFetch('GET',`/admin/users/${id}`)).data;
+  const roles = u.roles||[];
+  openModal('User Detail', `
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value td-mono" style="font-size:13px">${esc(u.email)}</div></div>
+      <div class="detail-item"><div class="detail-label">Name</div><div class="detail-value">${esc(u.first_name)} ${esc(u.last_name)}</div></div>
+      <div class="detail-item"><div class="detail-label">Type</div><div class="detail-value">${typeBadge(u.user_type)}</div></div>
+      <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(u.status)}</div></div>
+      <div class="detail-item"><div class="detail-label">Email verified</div><div class="detail-value">${u.email_verified?badge('yes','yes'):badge('no','no')}</div></div>
+      <div class="detail-item"><div class="detail-label">Last login</div><div class="detail-value">${fmtDt(u.last_login_at)}</div></div>
+      <div class="detail-item"><div class="detail-label">Created</div><div class="detail-value">${fmtDate(u.created_at)}</div></div>
+      <div class="detail-item"><div class="detail-label">ID</div><div class="detail-value td-mono" style="font-size:11px">${esc(u.id)}</div></div>
+    </div>
+    ${roles.length ? `<div class="form-section">Roles</div><div class="tag-list">${roles.map(r=>`<span class="tag">${esc(r.name)}</span>`).join('')}</div>` : ''}`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Close</button><button class="btn btn-primary" onclick="closeModal();showEditUser('${id}')">Edit</button>`);
+}
+
+async function deleteUser(id, email) {
+  if (!confirm(`Delete user ${email}? This cannot be undone.`)) return;
+  try { await apiFetch('DELETE',`/admin/users/${id}`); toast('User deleted','success'); renderUsers(usersPage); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ══════════════════════════════════════════
+// COMPANIES
+// ══════════════════════════════════════════
+let companiesPage = 1, companiesFilter = {};
+
+async function renderCompanies(page = 1) {
+  companiesPage = page;
+  const res = await apiFetch('GET', '/admin/companies' + qs({ page, ...companiesFilter }));
+  const rows = res.data||[], meta = res.meta||{};
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Companies</div><div class="page-sub">${meta.total||0} total</div></div>
+      <button class="btn btn-primary" onclick="showCreateCompany()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add company</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="filter-bar" style="margin:0">
+        <input type="search" placeholder="Search name, email…" value="${esc(companiesFilter.search||'')}" oninput="debounce(()=>{companiesFilter.search=this.value;renderCompanies(1)},300)()">
+        <select onchange="companiesFilter.status=this.value;renderCompanies(1)"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+      </div></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Employees</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>${rows.length ? rows.map(c=>`<tr><td><strong>${esc(c.name)}</strong></td><td class="td-mono">${esc(c.email)}</td><td>${c.employee_count||0}</td><td>${statusBadge(c.status)}</td><td>${fmtDate(c.created_at)}</td><td><div class="td-actions"><button class="btn btn-sm btn-ghost" onclick="showCompanyDetail('${esc(c.id)}')">View</button><button class="btn btn-sm btn-ghost" onclick="showEditCompany('${esc(c.id)}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteCompany('${esc(c.id)}','${esc(c.name)}')">Del</button></div></td></tr>`).join('') : '<tr><td colspan="6" class="empty" style="padding:32px;text-align:center;color:var(--text-muted)">No companies found</td></tr>'}
+      </tbody></table></div>
+      ${renderPagination(meta,'renderCompanies')}
+    </div>`;
+}
+
+async function showCreateCompany() {
+  openModal('Add Company', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Company name *</label><input class="form-input" id="c-name" placeholder="Acme Corp"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Email *</label><input class="form-input" id="c-email" type="email" placeholder="billing@acme.com"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="c-phone" placeholder="+1 555 0100"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Address</label><input class="form-input" id="c-addr" placeholder="123 Main St"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Billing email</label><input class="form-input" id="c-billing" type="email" placeholder="Same as email"></div>
+      <div class="form-group"><label class="form-label">Tax ID</label><input class="form-input" id="c-tax" placeholder="Optional"></div>
+    </div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitCreateCompany()">Create company</button>`);
+}
+
+async function submitCreateCompany() {
+  try {
+    await apiFetch('POST','/admin/companies',{name:document.getElementById('c-name').value.trim(),email:document.getElementById('c-email').value.trim(),phone:document.getElementById('c-phone').value.trim()||undefined,address:document.getElementById('c-addr').value.trim()||undefined,billing_email:document.getElementById('c-billing').value.trim()||undefined,tax_id:document.getElementById('c-tax').value.trim()||undefined});
+    closeModal(); toast('Company created','success'); renderCompanies(companiesPage);
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function showEditCompany(id) {
+  const c = (await apiFetch('GET',`/admin/companies/${id}`)).data;
+  openModal('Edit Company', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Company name</label><input class="form-input" id="ec-name" value="${esc(c.name)}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ec-email" value="${esc(c.email)}"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ec-phone" value="${esc(c.phone||'')}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Address</label><input class="form-input" id="ec-addr" value="${esc(c.address||'')}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Billing email</label><input class="form-input" id="ec-billing" value="${esc(c.billing_email||'')}"></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ec-status"><option value="active" ${c.status==='active'?'selected':''}>Active</option><option value="inactive" ${c.status==='inactive'?'selected':''}>Inactive</option></select></div>
+    </div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitEditCompany('${id}')">Save changes</button>`);
+}
+
+async function submitEditCompany(id) {
+  try {
+    await apiFetch('PUT',`/admin/companies/${id}`,{name:document.getElementById('ec-name').value.trim(),email:document.getElementById('ec-email').value.trim(),phone:document.getElementById('ec-phone').value.trim(),address:document.getElementById('ec-addr').value.trim(),billing_email:document.getElementById('ec-billing').value.trim(),status:document.getElementById('ec-status').value});
+    closeModal(); toast('Company updated','success'); renderCompanies(companiesPage);
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function showCompanyDetail(id) {
+  const c = (await apiFetch('GET',`/admin/companies/${id}`)).data;
+  const domains = c.domains||[];
+  const sub     = c.subscription;
+  openModal('Company Detail', `
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Name</div><div class="detail-value">${esc(c.name)}</div></div>
+      <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(c.status)}</div></div>
+      <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value td-mono" style="font-size:13px">${esc(c.email)}</div></div>
+      <div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value">${esc(c.phone||'—')}</div></div>
+      <div class="detail-item"><div class="detail-label">Created</div><div class="detail-value">${fmtDate(c.created_at)}</div></div>
+      <div class="detail-item"><div class="detail-label">Employees</div><div class="detail-value">${c.employee_count||0}</div></div>
+    </div>
+    <div class="form-section">Domains</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      ${domains.length ? domains.map(d=>`<span class="tag">${esc(d.domain)}<button onclick="removeDomain('${esc(d.id)}','${id}')" style="margin-left:6px;background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;line-height:1;padding:0">×</button></span>`).join('') : '<span style="color:var(--text-muted);font-size:13px">No domains</span>'}
+    </div>
+    <div style="display:flex;gap:8px"><input class="form-input" id="new-domain" placeholder="company.com" style="max-width:220px"><button class="btn btn-sm btn-primary" onclick="addDomain('${id}')">Add domain</button></div>
+    <div class="form-section">Subscription</div>
+    ${sub ? `<div class="detail-grid"><div class="detail-item"><div class="detail-label">Plan</div><div class="detail-value">${esc(sub.plan_name)}</div></div><div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(sub.status)}</div></div><div class="detail-item"><div class="detail-label">Type</div><div class="detail-value">${esc(sub.subscription_type)}</div></div><div class="detail-item"><div class="detail-label">Period end</div><div class="detail-value">${fmtDate(sub.current_period_end)}</div></div></div>` : `<div style="display:flex;align-items:center;justify-content:space-between"><span style="color:var(--text-muted);font-size:13px">No active subscription</span><button class="btn btn-sm btn-primary" onclick="showCreateSubscription('${id}')">Add subscription</button></div>`}`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`, true);
+}
+
+async function addDomain(companyId) {
+  const domain = document.getElementById('new-domain').value.trim();
+  if (!domain) return;
+  try { await apiFetch('POST',`/admin/companies/${companyId}/domains`,{domain}); toast('Domain added','success'); showCompanyDetail(companyId); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function removeDomain(domainId, companyId) {
+  if (!confirm('Remove this domain?')) return;
+  try { await apiFetch('DELETE',`/admin/companies/${companyId}/domains/${domainId}`); toast('Domain removed','success'); showCompanyDetail(companyId); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteCompany(id, name) {
+  if (!confirm(`Delete company "${name}"? This cannot be undone.`)) return;
+  try { await apiFetch('DELETE',`/admin/companies/${id}`); toast('Company deleted','success'); renderCompanies(companiesPage); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function showCreateSubscription(companyId) {
+  const plans = (await apiFetch('GET','/admin/plans')).data||[];
+  openModal('Create Subscription', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Plan *</label><select class="form-select" id="cs-plan">${plans.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Billing cycle *</label><select class="form-select" id="cs-cycle"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></div>
+      <div class="form-group"><label class="form-label">Type *</label><select class="form-select" id="cs-type"><option value="seat">Seat-based</option><option value="domain">Domain-based</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Max seats</label><input class="form-input" id="cs-seats" type="number" placeholder="Optional"></div>
+      <div class="form-group"><label class="form-label">Amount / cycle ($)</label><input class="form-input" id="cs-amount" type="number" step="0.01" placeholder="0.00"></div>
+    </div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitCreateSubscription('${companyId}')">Create</button>`);
+}
+
+async function submitCreateSubscription(companyId) {
+  try {
+    await apiFetch('POST',`/admin/companies/${companyId}/subscriptions`,{plan_id:document.getElementById('cs-plan').value,billing_cycle:document.getElementById('cs-cycle').value,subscription_type:document.getElementById('cs-type').value,max_seats:+document.getElementById('cs-seats').value||undefined,amount:+document.getElementById('cs-amount').value||undefined});
+    closeModal(); toast('Subscription created','success'); showCompanyDetail(companyId);
+  } catch(e) { dialogErr(e.message); }
+}
+
+// ══════════════════════════════════════════
+// ROLES
+// ══════════════════════════════════════════
+async function renderRoles() {
+  const res = await apiFetch('GET','/admin/roles');
+  const roles = res.data||[];
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Roles</div><div class="page-sub">Manage admin employee permissions</div></div>
+      <button class="btn btn-primary" onclick="showCreateRole()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add role</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Description</th><th>Permissions</th><th>System</th><th>Actions</th></tr></thead>
+      <tbody>${roles.length ? roles.map(r=>{const perms=JSON.parse(r.permissions||'[]'); return `<tr><td><strong>${esc(r.name)}</strong></td><td style="color:var(--text-muted)">${esc(r.description||'—')}</td><td><div class="tag-list">${perms.slice(0,4).map(p=>`<span class="tag">${esc(p)}</span>`).join('')}${perms.length>4?`<span class="tag">+${perms.length-4} more</span>`:''}</div></td><td>${r.is_system ? badge('system','active') : '—'}</td><td><div class="td-actions"><button class="btn btn-sm btn-ghost" onclick="showEditRole('${esc(r.id)}')">Edit</button>${!r.is_system?`<button class="btn btn-sm btn-danger" onclick="deleteRole('${esc(r.id)}','${esc(r.name)}')">Del</button>`:''}</div></td></tr>`; }).join('') : '<tr><td colspan="5" class="empty" style="padding:32px;text-align:center;color:var(--text-muted)">No roles yet</td></tr>'}
+      </tbody></table></div>
+    </div>`;
+}
+
+function renderPermCheckboxes(current = []) {
+  return PERMISSIONS.map(p => `<label class="perm-item"><input type="checkbox" name="perm" value="${p}" ${current.includes(p)?'checked':''}><span>${p}</span></label>`).join('');
+}
+
+async function showCreateRole() {
+  openModal('Add Role', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Role name *</label><input class="form-input" id="r-name" placeholder="e.g. Support Agent"></div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="r-desc" placeholder="Optional description"></div>
+    <div class="form-section">Permissions</div>
+    <div class="perm-grid">${renderPermCheckboxes()}</div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitCreateRole()">Create role</button>`);
+}
+
+async function submitCreateRole() {
+  const perms = [...document.querySelectorAll('input[name=perm]:checked')].map(i=>i.value);
+  try {
+    await apiFetch('POST','/admin/roles',{name:document.getElementById('r-name').value.trim(),description:document.getElementById('r-desc').value.trim(),permissions:perms});
+    closeModal(); toast('Role created','success'); renderRoles();
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function showEditRole(id) {
+  const roles = await apiFetch('GET','/admin/roles');
+  const r = (roles.data||[]).find(x=>x.id===id);
+  if (!r) return toast('Role not found','error');
+  const current = JSON.parse(r.permissions||'[]');
+  openModal('Edit Role', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Role name</label><input class="form-input" id="er-name" value="${esc(r.name)}"></div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="er-desc" value="${esc(r.description||'')}"></div>
+    <div class="form-section">Permissions</div>
+    <div class="perm-grid">${renderPermCheckboxes(current)}</div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitEditRole('${id}')">Save</button>`);
+}
+
+async function submitEditRole(id) {
+  const perms = [...document.querySelectorAll('input[name=perm]:checked')].map(i=>i.value);
+  try {
+    await apiFetch('PUT',`/admin/roles/${id}`,{name:document.getElementById('er-name').value.trim(),description:document.getElementById('er-desc').value.trim(),permissions:perms});
+    closeModal(); toast('Role updated','success'); renderRoles();
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function deleteRole(id, name) {
+  if (!confirm(`Delete role "${name}"?`)) return;
+  try { await apiFetch('DELETE',`/admin/roles/${id}`); toast('Role deleted','success'); renderRoles(); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ══════════════════════════════════════════
+// SUBSCRIPTIONS
+// ══════════════════════════════════════════
+let subsPage = 1, subsFilter = {};
+
+async function renderSubscriptions(page = 1) {
+  subsPage = page;
+  const res = await apiFetch('GET','/admin/subscriptions'+qs({page,...subsFilter}));
+  const rows = res.data||[], meta = res.meta||{};
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header"><div><div class="page-title">Company Subscriptions</div><div class="page-sub">${meta.total||0} total</div></div></div>
+    <div class="card">
+      <div class="card-header"><div class="filter-bar" style="margin:0">
+        <select onchange="subsFilter.status=this.value;renderSubscriptions(1)"><option value="">All statuses</option>${SUB_STATUSES.map(s=>`<option value="${s}" ${subsFilter.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div></div>
+      <div class="table-wrap"><table><thead><tr><th>Company</th><th>Plan</th><th>Type</th><th>Cycle</th><th>Status</th><th>Seats</th><th>Period end</th><th>Actions</th></tr></thead>
+      <tbody>${rows.length ? rows.map(s=>`<tr><td><strong>${esc(s.company_name)}</strong></td><td>${esc(s.plan_name)}</td><td>${esc(s.subscription_type)}</td><td>${esc(s.billing_cycle)}</td><td>${statusBadge(s.status)}</td><td>${s.max_seats||'—'}</td><td>${fmtDate(s.current_period_end)}</td><td><button class="btn btn-sm btn-ghost" onclick="showEditSubscription('${esc(s.id)}','${esc(s.status)}','${esc(s.max_seats||'')}')">Edit</button></td></tr>`).join('') : '<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--text-muted)">No subscriptions</td></tr>'}
+      </tbody></table></div>
+      ${renderPagination(meta,'renderSubscriptions')}
+    </div>`;
+}
+
+async function showEditSubscription(id, status, maxSeats) {
+  openModal('Update Subscription', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="es-status">${SUB_STATUSES.map(s=>`<option value="${s}" ${s===status?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="form-label">Max seats</label><input class="form-input" id="es-seats" type="number" value="${esc(maxSeats)}" placeholder="Leave blank for unlimited"></div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitEditSubscription('${id}')">Save</button>`);
+}
+
+async function submitEditSubscription(id) {
+  try {
+    await apiFetch('PUT',`/admin/subscriptions/${id}`,{status:document.getElementById('es-status').value,max_seats:+document.getElementById('es-seats').value||undefined});
+    closeModal(); toast('Subscription updated','success'); renderSubscriptions(subsPage);
+  } catch(e) { dialogErr(e.message); }
+}
+
+// ══════════════════════════════════════════
+// PLANS
+// ══════════════════════════════════════════
+async function renderPlans() {
+  const res = await apiFetch('GET','/admin/plans');
+  const plans = res.data||[];
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header"><div><div class="page-title">Subscription Plans</div><div class="page-sub">Manage pricing and features</div></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+      ${plans.length ? plans.map(p=>`
+        <div class="card" style="margin:0">
+          <div class="card-header"><span class="card-title">${esc(p.name)}</span>${p.is_active?badge('active','active'):badge('inactive','inactive')}</div>
+          <div class="card-body">
+            <div style="margin-bottom:10px"><span style="font-size:22px;font-weight:800">$${p.price_monthly}</span><span style="color:var(--text-muted);font-size:13px">/mo</span> &nbsp; <span style="font-size:16px;font-weight:600">$${p.price_yearly}</span><span style="color:var(--text-muted);font-size:13px">/yr</span></div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${esc(p.description||'')}</div>
+            <button class="btn btn-ghost btn-sm" style="width:100%" onclick="showEditPlan('${esc(p.id)}')">Edit plan</button>
+          </div>
+        </div>`).join('') : '<div class="empty"><p>No plans found</p></div>'}
+    </div>`;
+}
+
+async function showEditPlan(id) {
+  const plans = await apiFetch('GET','/admin/plans');
+  const p = (plans.data||[]).find(x=>x.id===id);
+  if (!p) return toast('Plan not found','error');
+  openModal('Edit Plan', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="ep-name" value="${esc(p.name)}"></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="ep-desc">${esc(p.description||'')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Monthly price ($)</label><input class="form-input" id="ep-mo" type="number" step="0.01" value="${p.price_monthly}"></div>
+      <div class="form-group"><label class="form-label">Yearly price ($)</label><input class="form-input" id="ep-yr" type="number" step="0.01" value="${p.price_yearly}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Active</label><select class="form-select" id="ep-active"><option value="1" ${p.is_active?'selected':''}>Yes</option><option value="0" ${!p.is_active?'selected':''}>No</option></select></div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitEditPlan('${id}')">Save</button>`);
+}
+
+async function submitEditPlan(id) {
+  try {
+    await apiFetch('PUT',`/admin/plans/${id}`,{name:document.getElementById('ep-name').value.trim(),description:document.getElementById('ep-desc').value.trim(),price_monthly:+document.getElementById('ep-mo').value,price_yearly:+document.getElementById('ep-yr').value,is_active:document.getElementById('ep-active').value==='1'});
+    closeModal(); toast('Plan updated','success'); renderPlans();
+  } catch(e) { dialogErr(e.message); }
+}
+
+// ══════════════════════════════════════════
+// REPORTS
+// ══════════════════════════════════════════
+async function renderReports() {
+  const [rev, users] = await Promise.all([
+    apiFetch('GET','/admin/reports/revenue'),
+    apiFetch('GET','/admin/reports/users')
+  ]);
+  const rd = rev.data||{}, ud = users.data||{};
+  const byMonth = rd.by_month||[];
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header"><div class="page-title">Revenue Reports</div></div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card"><div><div class="stat-label">MRR</div><div class="stat-value">$${(rd.mrr||0).toFixed(2)}</div><div class="stat-sub">Monthly recurring revenue</div></div></div>
+      <div class="stat-card"><div><div class="stat-label">Corp. subscriptions</div><div class="stat-value">${rd.active_subs?.corporate||0}</div><div class="stat-sub">active corporate plans</div></div></div>
+      <div class="stat-card"><div><div class="stat-label">Individual subs</div><div class="stat-value">${rd.active_subs?.individual||0}</div><div class="stat-sub">active individual plans</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Revenue by Month</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Month</th><th>Type</th><th>Revenue</th></tr></thead>
+      <tbody>${byMonth.length ? byMonth.map(r=>`<tr><td>${fmtDate(r.month)}</td><td>${esc(r.subscription_type||'—')}</td><td><strong>$${(+r.total||0).toFixed(2)}</strong></td></tr>`).join('') : '<tr><td colspan="3" style="padding:24px;text-align:center;color:var(--text-muted)">No revenue data yet</td></tr>'}
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">User Stats</span></div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">New this month</div><div class="detail-value" style="font-size:20px;font-weight:700">${ud.new_this_month||0}</div></div>
+        </div>
+        <hr class="divider">
+        <table><thead><tr><th>Type</th><th>Count</th></tr></thead><tbody>
+          ${(ud.by_type||[]).map(r=>`<tr><td>${typeBadge(r.user_type)}</td><td><strong>${r.count}</strong></td></tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// AUDIT LOGS
+// ══════════════════════════════════════════
+let auditPage = 1, auditFilter = {};
+
+async function renderAudit(page = 1) {
+  auditPage = page;
+  const res = await apiFetch('GET','/admin/audit-logs'+qs({page,...auditFilter}));
+  const rows = res.data||[], meta = res.meta||{};
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header"><div><div class="page-title">Audit Logs</div><div class="page-sub">${meta.total||0} entries</div></div></div>
+    <div class="card">
+      <div class="card-header"><div class="filter-bar" style="margin:0">
+        <input type="search" placeholder="Search action…" value="${esc(auditFilter.action||'')}" oninput="debounce(()=>{auditFilter.action=this.value;renderAudit(1)},350)()">
+        <select onchange="auditFilter.resource_type=this.value;renderAudit(1)"><option value="">All resources</option>${['user','company','role','company_subscription','individual_subscription'].map(r=>`<option value="${r}" ${auditFilter.resource_type===r?'selected':''}>${r}</option>`).join('')}</select>
+        <input type="date" value="${esc(auditFilter.from||'')}" onchange="auditFilter.from=this.value;renderAudit(1)" title="From date">
+        <input type="date" value="${esc(auditFilter.to||'')}" onchange="auditFilter.to=this.value;renderAudit(1)" title="To date">
+        <button class="btn btn-ghost btn-sm" onclick="auditFilter={};renderAudit(1)">Clear</button>
+      </div></div>
+      <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Resource</th><th>Resource ID</th></tr></thead>
+      <tbody>${rows.length ? rows.map(r=>`<tr><td style="white-space:nowrap;font-size:12px">${fmtDt(r.created_at)}</td><td class="td-mono" style="font-size:12px">${esc(r.user_name||r.email||'—')}</td><td><code style="font-size:12px;background:var(--bg);padding:2px 6px;border-radius:4px">${esc(r.action)}</code></td><td>${esc(r.resource_type||'—')}</td><td class="td-mono" style="font-size:11px;color:var(--text-muted)">${esc((r.resource_id||'—').substring(0,12))}…</td></tr>`).join('') : '<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-muted)">No logs found</td></tr>'}
+      </tbody></table></div>
+      ${renderPagination(meta,'renderAudit')}
+    </div>`;
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
