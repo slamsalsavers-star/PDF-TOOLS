@@ -1,0 +1,9 @@
+{
+  "name": "shipmentms-database",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup.js",
+    "seed": "node seed.js"
+  }
+}
