@@ -1,5 +1,6 @@
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+// utils.js loaded before this file provides:
+// ensurePdf, formatSize, downloadBlob, setStatus, setProgress, toast
+// pdfjsLib.GlobalWorkerOptions.workerSrc is also set there.
 
 const state = {
   pdfDoc: null,
@@ -11,8 +12,6 @@ const state = {
 // ── Utilities ──────────────────────────────────────────────────────────────
 
 function pad(n) { return n.toString().padStart(6, '0'); }
-
-function ensurePdf(name) { return name.endsWith('.pdf') ? name : `${name}.pdf`; }
 
 function getStartNumber() {
   const v = parseInt($('#startNo').val(), 10);
@@ -34,22 +33,6 @@ function buildGroupFileName(pageIndexes) {
 function setControls(on) {
   ['#selectAllBtn', '#deselectAllBtn', '#splitBtn', '#downloadZipBtn', '#clearBtn']
     .forEach(sel => $(sel).prop('disabled', !on));
-}
-
-function setStatus(msg, type = '') {
-  $('#statusBar').removeClass('is-loading is-success is-error').addClass(type ? `is-${type}` : '');
-  $('#statusText').text(msg);
-}
-
-function setProgress(pct) {
-  if (pct == null) { $('#progressWrap').hide(); $('#progressBar').css('width', '0%'); }
-  else             { $('#progressWrap').show(); $('#progressBar').css('width', `${pct}%`); }
-}
-
-function showToast(msg, type = 'info', ms = 3500) {
-  const t = $(`<div class="toast toast-${type}">${msg}</div>`);
-  $('#toast-root').append(t);
-  setTimeout(() => t.fadeOut(280, function () { $(this).remove(); }), ms);
 }
 
 // ── Range Parsing ──────────────────────────────────────────────────────────
@@ -111,7 +94,7 @@ async function splitPage(pageIndex, fileName) {
 }
 
 async function mergePages(pageIndexes, fileName) {
-  const doc = await PDFLib.PDFDocument.create();
+  const doc   = await PDFLib.PDFDocument.create();
   const pages = await doc.copyPages(state.pdfDoc, pageIndexes);
   pages.forEach(p => doc.addPage(p));
   const bytes = await doc.save();
@@ -136,19 +119,11 @@ function buildSplitGroups() {
 
 // ── Download ───────────────────────────────────────────────────────────────
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 async function downloadZip() {
   const zip = new JSZip();
   const rangeGroups = getRangeGroups();
 
   if (rangeGroups.length) {
-    // Range mode — one ZIP entry per range group, no individual pages
     for (let i = 0; i < rangeGroups.length; i++) {
       const card    = $(`#rangeGroups .group-card[data-group-index='${i}']`);
       const checked = !card.length || card.find('.group-select').prop('checked');
@@ -159,7 +134,6 @@ async function downloadZip() {
       zip.file(result.fileName, result.blob);
     }
   } else if (state.splitResults.length) {
-    // Pre-split results mode — use cached blobs
     state.splitResults.forEach((item, i) => {
       const card    = $(`#rangeGroups .group-card[data-group-index='${i}']`);
       const checked = !card.length || card.find('.group-select').prop('checked');
@@ -169,7 +143,6 @@ async function downloadZip() {
       zip.file(item.fileName, item.blob);
     });
   } else {
-    // Individual page mode
     const selected = getSelectedPageIndexes();
     if (selected.length) {
       const results = await splitPages(selected);
@@ -178,7 +151,7 @@ async function downloadZip() {
   }
 
   if (Object.keys(zip.files).length === 0) {
-    showToast('Nothing to download. Select pages or set a split range.', 'warning');
+    toast('Nothing to download. Select pages or set a split range.', 'warning');
     return;
   }
 
@@ -187,7 +160,7 @@ async function downloadZip() {
   saveAs(content, 'pdf-split-results.zip');
   const count = Object.keys(zip.files).length;
   setStatus(`ZIP downloaded — ${count} file(s).`, 'success');
-  showToast('ZIP downloaded successfully.', 'success');
+  toast('ZIP downloaded successfully.', 'success');
 }
 
 // ── Group Cards ────────────────────────────────────────────────────────────
@@ -220,7 +193,7 @@ function createGroupCard(pageIndexes, groupIndex) {
   );
   dlBtn.on('click', async function () {
     const result = state.splitResults[groupIndex];
-    if (!result) { showToast('Click Split first.', 'warning'); return; }
+    if (!result) { toast('Click Split first.', 'warning'); return; }
     result.fileName = ensurePdf(nameInput.val().trim() || initialName);
     downloadBlob(result.blob, result.fileName);
   });
@@ -248,9 +221,9 @@ function createPageCard(pageIndex) {
   );
   thumbWrap.append(canvas, overlay).on('click', () => openPreview(pageIndex));
 
-  const body      = $('<div>').addClass('card-body');
-  const header    = $('<div>').addClass('card-header');
-  const check     = $('<input type="checkbox" class="page-check" checked />');
+  const body   = $('<div>').addClass('card-body');
+  const header = $('<div>').addClass('card-header');
+  const check  = $('<input type="checkbox" class="page-check" checked />');
   check.on('change', function () { wrapper.toggleClass('is-selected', this.checked); });
   header.append($('<span>').addClass('page-label').text(`Page ${pageIndex + 1}`), check);
 
@@ -279,8 +252,8 @@ async function renderPreviewCanvas(pageIndex, scale) {
   const canvas   = document.getElementById('previewCanvas');
   const page     = await state.previewDoc.getPage(pageIndex + 1);
   const viewport = page.getViewport({ scale });
-  canvas.width  = viewport.width;
-  canvas.height = viewport.height;
+  canvas.width   = viewport.width;
+  canvas.height  = viewport.height;
   await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 }
 
@@ -325,8 +298,8 @@ function closePreview() {
 async function renderThumbnail(pageIndex, canvas) {
   const page     = await state.previewDoc.getPage(pageIndex + 1);
   const viewport = page.getViewport({ scale: 0.6 });
-  canvas.width  = viewport.width;
-  canvas.height = viewport.height;
+  canvas.width   = viewport.width;
+  canvas.height  = viewport.height;
   await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 }
 
@@ -334,7 +307,7 @@ async function renderThumbnail(pageIndex, canvas) {
 
 async function loadPdf() {
   const file = document.getElementById('pdfFile').files[0];
-  if (!file) { showToast('Please choose a PDF file first.', 'warning'); return; }
+  if (!file) { toast('Please choose a PDF file first.', 'warning'); return; }
 
   if (state.previewDoc) { state.previewDoc.destroy(); state.previewDoc = null; }
 
@@ -350,7 +323,7 @@ async function loadPdf() {
   } catch (_) {
     setStatus('Failed to load PDF — the file may be corrupt or password-protected.', 'error');
     setProgress(null);
-    showToast('Error loading PDF.', 'error');
+    toast('Error loading PDF.', 'error');
     return;
   }
 
@@ -377,7 +350,7 @@ async function loadPdf() {
 async function runSplitGroups() {
   const groups = buildSplitGroups();
   if (!groups.length) {
-    showToast('Enter a valid range or select at least one page.', 'warning');
+    toast('Enter a valid range or select at least one page.', 'warning');
     return false;
   }
 
@@ -392,7 +365,7 @@ async function runSplitGroups() {
 
   showSplitGroups(groups);
   setStatus(`${state.splitResults.length} group(s) ready. Download individually or as a ZIP.`, 'success');
-  showToast(`${state.splitResults.length} group(s) ready.`, 'success');
+  toast(`${state.splitResults.length} group(s) ready.`, 'success');
   return true;
 }
 
@@ -418,7 +391,7 @@ uploadZone.addEventListener('drop', e => {
     pdfFileInput.files = dt.files;
     $('#chosenFileName').text(f.name);
   } else {
-    showToast('Please drop a PDF file.', 'warning');
+    toast('Please drop a PDF file.', 'warning');
   }
 });
 

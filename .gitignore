@@ -1,0 +1,15 @@
+# Environment / secrets
+backend/.env
+.env
+*.env
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code memory (local only)
+.claude/

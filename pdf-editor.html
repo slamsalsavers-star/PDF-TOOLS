@@ -42,7 +42,7 @@
 
       <!-- File-loaded state — filename + all controls in one row -->
       <div id="topbarFileInfo" class="topbar-section" style="display:none">
-        <span class="filename-chip" id="filenameBadge"></span>
+        <input type="text" class="filename-chip" id="filenameBadge" spellcheck="false" title="Click to rename" />
 
         <span class="topbar-vsep"></span>
 
@@ -71,14 +71,23 @@
 
         <!-- Page navigation -->
         <div class="tb-control-group">
-          <button class="tb-icon-btn" id="prevPage">
+          <button class="tb-icon-btn" id="prevPage" title="Previous page (←)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <span class="tb-lbl" id="pageLabel">1 / 1</span>
-          <button class="tb-icon-btn" id="nextPage">
+          <button class="tb-icon-btn" id="nextPage" title="Next page (→)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
+
+        <span class="topbar-vsep"></span>
+
+        <button class="tb-icon-btn" id="addPageBtn" title="Add blank page after current page" style="color:var(--primary)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 2v6h6M12 13v4M10 15h4" stroke-linecap="round"/>
+          </svg>
+        </button>
 
         <span class="topbar-vsep"></span>
 
@@ -120,15 +129,32 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z" stroke-linejoin="round"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke-linejoin="round"/></svg>
             Draw
           </button>
-          <button class="tool-btn" data-tool="rect" title="Rectangle  (R)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
-            Rectangle
+          <button class="tool-btn" data-tool="shape" title="Shapes  (R)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="13" width="9" height="9" rx="1.5"/>
+              <polygon points="12,2 21,7.5 21,13 12,13"/>
+              <circle cx="18.5" cy="18.5" r="3.5"/>
+            </svg>
+            Shapes
+          </button>
+          <button class="tool-btn" data-tool="forms" title="Forms  (F)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M7 8h6M7 12h8M7 16h4"/>
+              <path d="M17 14l2 2 3-3" stroke-width="1.8"/>
+            </svg>
+            Forms
           </button>
           <button class="tool-btn" data-tool="eraser" title="Delete Object  (E)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l10-10 7 7-4.5 4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Eraser
           </button>
+          <button class="tool-btn" data-tool="image" title="Insert Image  (I)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Image
+          </button>
         </div>
+        <input type="file" id="imageFileInput" accept="image/*" style="display:none" />
 
         <div class="side-sep"></div>
         <p class="sidebar-heading">Options</p>
@@ -152,17 +178,11 @@
           </div>
           <div class="side-opt" id="optFontSize" style="display:none">
             <span class="opt-lbl">Size</span>
-            <select id="fontSize" class="input input-sm">
-              <option value="10">10</option>
-              <option value="12">12</option>
-              <option value="14">14</option>
-              <option value="16">16</option>
-              <option value="18" selected>18</option>
-              <option value="24">24</option>
-              <option value="32">32</option>
-              <option value="48">48</option>
-              <option value="64">64</option>
-            </select>
+            <div class="font-size-spinner">
+              <button class="spinner-btn" id="fontSizeDec" title="Decrease size">−</button>
+              <input type="number" id="fontSize" class="spinner-input" value="18" min="6" max="400" />
+              <button class="spinner-btn" id="fontSizeInc" title="Increase size">+</button>
+            </div>
           </div>
           <!-- Alignment — text only -->
           <div class="side-opt" id="optTextAlign" style="display:none">
@@ -226,6 +246,91 @@
             <span class="opt-lbl">Width <span id="brushVal">3</span>px</span>
             <input type="range" id="brushSize" min="1" max="24" value="3" />
           </div>
+
+          <!-- Forms panel — forms tool only -->
+          <div class="side-opt side-opt-col" id="optForms" style="display:none">
+            <div class="forms-hint" id="formsHint">Select a type below, then click on the page to place it.</div>
+
+            <p class="forms-section-label">Symbols</p>
+            <div class="forms-symbols-row">
+              <button class="form-item-btn" data-form="sym-x" title="Cross mark">
+                <span style="font-size:17px;line-height:1">✕</span>
+              </button>
+              <button class="form-item-btn" data-form="sym-check" title="Check mark">
+                <span style="font-size:17px;line-height:1">✓</span>
+              </button>
+              <button class="form-item-btn" data-form="sym-square" title="Filled square">
+                <span style="font-size:14px;line-height:1">■</span>
+              </button>
+            </div>
+
+            <p class="forms-section-label" style="margin-top:10px">Form Fields</p>
+            <div class="forms-fields-list">
+              <button class="form-item-btn form-field-btn" data-form="text-single">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="14" height="8" rx="1.5"/><line x1="4" y1="8" x2="12" y2="8" stroke-width="1"/></svg>
+                Text
+              </button>
+              <button class="form-item-btn form-field-btn" data-form="text-multi">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="4" y1="6" x2="12" y2="6" stroke-width="1"/><line x1="4" y1="9" x2="12" y2="9" stroke-width="1"/><line x1="4" y1="12" x2="9" y2="12" stroke-width="1"/></svg>
+                Text multiline
+              </button>
+              <button class="form-item-btn form-field-btn" data-form="radio">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.5" fill="currentColor" stroke="none"/></svg>
+                Radio button
+              </button>
+              <button class="form-item-btn form-field-btn" data-form="checkbox">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M4.5 8l2.5 2.5 4-4"/></svg>
+                Checkbox
+              </button>
+              <button class="form-item-btn form-field-btn" data-form="dropdown">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="14" height="8" rx="1.5"/><polyline points="9.5,7.5 11,9.5 12.5,7.5"/><line x1="9" y1="5.5" x2="9" y2="10.5" stroke-width="1" opacity="0.5"/></svg>
+                Drop-down list
+              </button>
+            </div>
+          </div>
+
+          <!-- Shapes picker — shape tool only -->
+          <div class="side-opt side-opt-col" id="optShape" style="display:none">
+            <span class="opt-lbl">Shape</span>
+            <div class="shape-grid">
+              <button class="shape-item active" data-shape="rect" title="Rectangle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="0"/></svg>
+              </button>
+              <button class="shape-item" data-shape="roundrect" title="Rounded Rectangle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="5"/></svg>
+              </button>
+              <button class="shape-item" data-shape="circle" title="Circle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg>
+              </button>
+              <button class="shape-item" data-shape="ellipse" title="Ellipse">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
+              </button>
+              <button class="shape-item" data-shape="line" title="Line">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+              </button>
+              <button class="shape-item" data-shape="arrow" title="Arrow">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14,6 20,12 14,18"/></svg>
+              </button>
+              <button class="shape-item" data-shape="dbarrow" title="Double Arrow">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="10,6 4,12 10,18"/><polyline points="14,6 20,12 14,18"/></svg>
+              </button>
+              <button class="shape-item" data-shape="triangle" title="Triangle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12,3 22,21 2,21"/></svg>
+              </button>
+              <button class="shape-item" data-shape="diamond" title="Diamond">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12,2 22,12 12,22 2,12"/></svg>
+              </button>
+              <button class="shape-item" data-shape="star" title="Star">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+              </button>
+              <button class="shape-item" data-shape="hexagon" title="Hexagon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12,2.5 20.5,7 20.5,17 12,21.5 3.5,17 3.5,7"/></svg>
+              </button>
+              <button class="shape-item" data-shape="pentagon" title="Pentagon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12,2.5 21,9 17.5,20 6.5,20 3,9"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="side-sep"></div>
@@ -237,28 +342,147 @@
           Add Signature
         </button>
 
+        <div class="side-sep"></div>
+        <button class="sig-sidebar-btn" id="openTableBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="1"/>
+            <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+          </svg>
+          Insert Table
+        </button>
+
+        <div class="side-sep"></div>
+        <button class="sig-sidebar-btn" id="openHtmlBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          HTML Content
+        </button>
+
       </div>
     </aside>
 
     <!-- Canvas area -->
     <div class="canvas-area">
       <div class="upload-overlay" id="uploadOverlay">
-        <div class="upload-zone" id="uploadZone">
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M14 2v6h6M12 11v6M9 14l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <h3>Drop your PDF here</h3>
-          <p>or click to browse</p>
+
+        <!-- ── Start screen: open or new ─────────────────────── -->
+        <div class="start-screen" id="startScreen">
+          <div class="start-card" id="uploadCard">
+            <div class="start-card-icon">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 2v6h6M12 11v6M9 14l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>Open PDF</h3>
+            <p>Drag &amp; drop a PDF here<br>or click to browse files</p>
+          </div>
+
+          <div class="start-divider">or</div>
+
+          <div class="start-card start-card--new" id="newDocCard">
+            <div class="start-card-icon">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 2v6h6M12 11v4M10 13h4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>New Document</h3>
+            <p>Start with a blank PDF<br>of any size you choose</p>
+          </div>
         </div>
+
+        <!-- ── New document config panel ─────────────────────── -->
+        <div class="new-doc-panel" id="newDocPanel" style="display:none">
+          <button class="new-doc-back" id="newDocBack">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M19 12H5M12 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+          </button>
+
+          <div class="new-doc-header">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 2v6h6M12 11v4M10 13h4" stroke-linecap="round"/>
+            </svg>
+            <span>New Blank Document</span>
+          </div>
+
+          <div class="new-doc-fields">
+            <div class="new-doc-field">
+              <label class="nd-label">Page Size</label>
+              <select id="ndPageSize" class="nd-select">
+                <option value="Letter">Letter  (8.5 × 11 in)</option>
+                <option value="A4">A4  (210 × 297 mm)</option>
+                <option value="Legal">Legal  (8.5 × 14 in)</option>
+                <option value="Tabloid">Tabloid  (11 × 17 in)</option>
+                <option value="A3">A3  (297 × 420 mm)</option>
+              </select>
+            </div>
+
+            <div class="new-doc-field">
+              <label class="nd-label">Orientation</label>
+              <div class="orient-toggle">
+                <label class="orient-opt orient-opt--active" id="orientPortrait">
+                  <input type="radio" name="ndOrient" value="portrait" checked style="display:none" />
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="5" y="2" width="14" height="20" rx="1.5"/>
+                  </svg>
+                  Portrait
+                </label>
+                <label class="orient-opt" id="orientLandscape">
+                  <input type="radio" name="ndOrient" value="landscape" style="display:none" />
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="5" width="20" height="14" rx="1.5"/>
+                  </svg>
+                  Landscape
+                </label>
+              </div>
+            </div>
+
+            <div class="new-doc-field">
+              <label class="nd-label">Number of Pages</label>
+              <div class="nd-spinner">
+                <button class="spinner-btn" id="ndPagesDec">−</button>
+                <input type="number" id="ndPages" value="1" min="1" max="50" class="spinner-input" style="width:54px;text-align:center" />
+                <button class="spinner-btn" id="ndPagesInc">+</button>
+              </div>
+            </div>
+
+            <div class="new-doc-field">
+              <label class="nd-label">Background</label>
+              <div class="nd-bg-row">
+                <span class="nd-swatch nd-swatch--active" data-color="#ffffff" title="White" style="background:#ffffff"></span>
+                <span class="nd-swatch" data-color="#fef9f0" title="Cream" style="background:#fef9f0"></span>
+                <span class="nd-swatch" data-color="#f1f5f9" title="Light gray" style="background:#f1f5f9"></span>
+                <label class="nd-swatch nd-swatch--custom" title="Custom color">
+                  <input type="color" id="ndBgColor" value="#ffffff" style="opacity:0;position:absolute;width:0;height:0" />
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6h2c3 0 5.5-2.5 5.5-5.5C21.9 6 17.5 2 12 2z"/>
+                    <circle cx="8" cy="8"  r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="14" cy="6" r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="18" cy="11" r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="7" cy="14" r="1.2" fill="currentColor" stroke="none"/>
+                  </svg>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="ndCreateBtn" style="width:100%;justify-content:center;gap:7px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+            </svg>
+            Create Document
+          </button>
+        </div>
+
       </div>
 
       <div class="canvas-scroll" id="canvasScroll" style="display:none">
-        <div class="canvas-spacer" id="canvasSpacer">
-          <div class="canvas-outer" id="canvasOuter">
-            <canvas id="editorCanvas"></canvas>
-          </div>
-        </div>
+        <div class="pages-container" id="pagesContainer"></div>
       </div>
     </div>
 
@@ -344,7 +568,248 @@
   </div>
 </div>
 
+<!-- ── Table Modal ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="tableModal" style="display:none" role="dialog" aria-modal="true" aria-label="Insert Table">
+  <div class="modal-box tbl-modal-box">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+        </svg>
+        Insert Table
+      </div>
+      <button class="modal-close-btn" id="tblClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="tbl-modal-body">
+
+      <!-- Left: controls -->
+      <div class="tbl-ctrl-pane">
+
+        <p class="tbl-section-hd">Structure</p>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Rows</span>
+          <div class="font-size-spinner">
+            <button class="spinner-btn" id="tblRowsDec">−</button>
+            <input type="number" id="tblRowsInput" class="spinner-input" value="3" min="1" max="50" />
+            <button class="spinner-btn" id="tblRowsInc">+</button>
+          </div>
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Cols</span>
+          <div class="font-size-spinner">
+            <button class="spinner-btn" id="tblColsDec">−</button>
+            <input type="number" id="tblColsInput" class="spinner-input" value="4" min="1" max="20" />
+            <button class="spinner-btn" id="tblColsInc">+</button>
+          </div>
+        </div>
+
+        <p class="tbl-section-hd">Insert / Delete</p>
+        <div class="tbl-btn-grid tbl-btn-grid-2">
+          <button class="tbl-act-btn" id="tblAddRowAbove">+ Insert Row</button>
+          <button class="tbl-act-btn tbl-act-danger" id="tblDelRow">− Delete Row</button>
+          <button class="tbl-act-btn" id="tblAddColLeft">+ Insert Col</button>
+          <button class="tbl-act-btn tbl-act-danger" id="tblDelCol">− Delete Col</button>
+        </div>
+
+        <p class="tbl-section-hd">Merge</p>
+        <div class="tbl-btn-grid tbl-btn-grid-2">
+          <button class="tbl-act-btn" id="tblMerge">⊞ Merge Cells</button>
+          <button class="tbl-act-btn" id="tblSplit">⊟ Split Cell</button>
+        </div>
+
+        <p class="tbl-section-hd">Cell Style</p>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Format</span>
+          <div class="fmt-btns">
+            <button class="fmt-btn fmt-bold"   id="tblFmtBold"   title="Bold">B</button>
+            <button class="fmt-btn fmt-italic" id="tblFmtItalic" title="Italic">I</button>
+            <button class="fmt-btn fmt-under"  id="tblFmtUnder"  title="Underline">U</button>
+          </div>
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Align</span>
+          <div class="fmt-btns">
+            <button class="fmt-btn active" data-tbl-align="left" title="Left">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h12M3 18h15" stroke-linecap="round"/></svg>
+            </button>
+            <button class="fmt-btn" data-tbl-align="center" title="Center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M6 12h12M4.5 18h15" stroke-linecap="round"/></svg>
+            </button>
+            <button class="fmt-btn" data-tbl-align="right" title="Right">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M9 12h12M6 18h15" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Font size</span>
+          <div class="font-size-spinner">
+            <button class="spinner-btn" id="tblFontSzDec">−</button>
+            <input type="number" id="tblFontSzInput" class="spinner-input" value="13" min="8" max="72" />
+            <button class="spinner-btn" id="tblFontSzInc">+</button>
+          </div>
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Text color</span>
+          <input type="color" id="tblTextColor" value="#1e293b" />
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Cell BG</span>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="color" id="tblCellBg" value="#ffffff" />
+            <button class="fmt-btn" id="tblClearCellBg" title="Clear background">✕</button>
+          </div>
+        </div>
+
+        <p class="tbl-section-hd">Table Style</p>
+        <label class="tbl-toggle-row">
+          <input type="checkbox" id="tblHeaderRow" checked />
+          <span>Header row</span>
+        </label>
+        <label class="tbl-toggle-row">
+          <input type="checkbox" id="tblStriped" />
+          <span>Striped rows</span>
+        </label>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Border</span>
+          <select id="tblBorderStyle" class="input" style="width:auto;flex:1;font-size:0.75rem">
+            <option value="0">None</option>
+            <option value="1" selected>Thin</option>
+            <option value="2">Medium</option>
+            <option value="3">Thick</option>
+          </select>
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Border color</span>
+          <input type="color" id="tblBorderColor" value="#cbd5e1" />
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Header BG</span>
+          <input type="color" id="tblHeaderBg" value="#334155" />
+        </div>
+        <div class="tbl-ctrl-row">
+          <span class="tbl-ctrl-lbl">Alt row BG</span>
+          <input type="color" id="tblAltRowBg" value="#f8fafc" />
+        </div>
+
+      </div>
+
+      <!-- Right: live table editor -->
+      <div class="tbl-editor-pane">
+        <div class="tbl-editor-hint">
+          <span>Click to edit · Shift+click to select range · Ctrl+click to multi-select · Tab to move cells</span>
+          <span id="tblSelInfo" class="tbl-sel-info"></span>
+        </div>
+        <div class="tbl-editor-scroll">
+          <div id="tblEditorWrap"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tbl-modal-footer">
+      <button class="btn btn-ghost-outline" id="tblCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="tblInsertBtn">
+        Insert into PDF
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── HTML Content Modal ────────────────────────────────────── -->
+<div class="modal-overlay" id="htmlModal" style="display:none" role="dialog" aria-modal="true" aria-label="Insert HTML Content">
+  <div class="modal-box html-modal-box">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Insert HTML Content
+      </div>
+      <button class="modal-close-btn" id="htmlClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="html-editor-body">
+
+      <!-- Left: code editors -->
+      <div class="html-editor-pane">
+        <div class="html-code-tabs">
+          <button class="html-code-tab active" data-codetab="html">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            HTML
+          </button>
+          <button class="html-code-tab" data-codetab="css">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4l2 14.5 6 1.5 6-1.5L20 4H4z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            CSS
+          </button>
+        </div>
+        <textarea id="htmlCodeInput" class="html-code-editor" placeholder="<h1>Hello World</h1>&#10;<p>Your content here…</p>" spellcheck="false"></textarea>
+        <textarea id="cssCodeInput"  class="html-code-editor" style="display:none" placeholder="body {&#10;  font-family: sans-serif;&#10;}&#10;&#10;h1 { color: #333; }" spellcheck="false"></textarea>
+      </div>
+
+      <!-- Right: live preview -->
+      <div class="html-preview-pane">
+        <div class="html-preview-header">
+          <span class="html-preview-label">
+            <svg width="7" height="7" viewBox="0 0 10 10" fill="#10b981"><circle cx="5" cy="5" r="5"/></svg>
+            Live Preview
+          </span>
+          <span id="htmlPreviewStatus" class="html-preview-status"></span>
+        </div>
+        <iframe id="htmlPreviewFrame" class="html-preview-frame" sandbox="allow-same-origin allow-scripts" title="HTML preview"></iframe>
+      </div>
+
+    </div>
+
+    <div class="html-modal-footer">
+      <button class="btn btn-ghost-outline" id="htmlCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="htmlInsertBtn">
+        Insert into PDF
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Dropdown Options Modal ────────────────────────────────── -->
+<div class="modal-overlay" id="dropdownOptModal" style="display:none" role="dialog" aria-modal="true" aria-label="Dropdown Options">
+  <div class="modal-box dropdown-opt-box">
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <path d="M8 12h8M13 9l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Dropdown Options
+      </div>
+      <button class="modal-close-btn" id="dropdownOptClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="dropdown-opt-hint">Enter the choices users will see when they open this dropdown in the PDF.</p>
+    <div id="dropdownOptList" class="dropdown-opt-list"></div>
+    <button id="dropdownOptAdd" class="dropdown-opt-add-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      Add option
+    </button>
+    <div class="modal-footer" style="margin-top:16px">
+      <button id="dropdownOptCancel" class="modal-cancel-btn">Cancel</button>
+      <button id="dropdownOptDone" class="modal-action-btn">Done</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-root"></div>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="js/pdf-editor.js" defer></script>
 </body>
 </html>

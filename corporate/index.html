@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corporate Panel — PDF Tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0ea5e9; --primary-dark: #0284c7; --primary-light: #e0f2fe;
+      --bg: #f0f9ff; --surface: #fff; --border: #e0f2fe; --border-s: #bae6fd;
+      --text: #0c1a2e; --text-2: #1e3a5f; --text-muted: #64748b;
+      --success: #059669; --danger: #dc2626; --warning: #d97706;
+      --sb: #0c1a2e; --sb-text: #93c5fd;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+    .shell { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { width: 230px; background: var(--sb); display: flex; flex-direction: column; position: fixed; inset-y: 0; left: 0; z-index: 100; overflow-y: auto; }
+    .sb-brand { padding: 18px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-brand-icon { width: 34px; height: 34px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sb-brand-icon svg { color: #fff; }
+    .sb-brand-text { font-size: 14px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-company { padding: 10px 14px; font-size: 12px; color: var(--sb-text); border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sb-company-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-nav { flex: 1; padding: 10px 8px; }
+    .sb-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: rgba(147,197,253,.4); padding: 12px 10px 4px; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; color: var(--sb-text); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: background .14s, color .14s; user-select: none; }
+    .nav-link:hover { background: rgba(255,255,255,.06); color: #e2e8f0; }
+    .nav-link.active { background: var(--primary); color: #fff; }
+    .nav-link svg { flex-shrink: 0; width: 16px; height: 16px; }
+    .sb-footer { padding: 12px; border-top: 1px solid rgba(255,255,255,.07); }
+    .sb-user { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+    .sb-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .sb-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-role { font-size: 11px; color: var(--sb-text); }
+    .btn-logout { width: 100%; margin-top: 8px; padding: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 7px; color: var(--sb-text); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .14s, color .14s; }
+    .btn-logout:hover { background: rgba(220,38,38,.25); color: #fca5a5; border-color: rgba(220,38,38,.3); }
+
+    /* Main */
+    .main-wrap { margin-left: 230px; display: flex; flex-direction: column; min-height: 100vh; flex: 1; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    #topbar-title { font-size: 16px; font-weight: 700; }
+    .content { padding: 24px; flex: 1; }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 20px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-body { padding: 20px; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.1; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .page-title { font-size: 20px; font-weight: 800; }
+    .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .filter-bar input, .filter-bar select { padding: 7px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); background: var(--surface); outline: none; }
+    .filter-bar input:focus, .filter-bar select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(14,165,233,.1); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); border-bottom: 2px solid var(--border); white-space: nowrap; background: #f0f9ff; }
+    td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-2); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f0f9ff; }
+    .td-actions { display: flex; gap: 5px; }
+    .td-mono { font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-active    { background: #d1fae5; color: #065f46; }
+    .badge-inactive  { background: #f1f5f9; color: #475569; }
+    .badge-pending   { background: #fef3c7; color: #92400e; }
+    .badge-accepted  { background: #d1fae5; color: #065f46; }
+    .badge-expired   { background: #fee2e2; color: #991b1b; }
+    .badge-revoked   { background: #f1f5f9; color: #64748b; }
+    .badge-trial     { background: #dbeafe; color: #1d4ed8; }
+    .badge-past_due  { background: #fef3c7; color: #92400e; }
+    .badge-cancelled { background: #f1f5f9; color: #64748b; }
+    .badge-yes { background: #d1fae5; color: #065f46; }
+    .badge-no  { background: #f1f5f9; color: #64748b; }
+
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .14s; line-height: 1; }
+    .btn svg { flex-shrink: 0; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+    .btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text-2); }
+    .btn-ghost:hover:not(:disabled) { background: var(--bg); }
+    .btn-sm  { padding: 4px 9px; font-size: 12px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); background: var(--surface); outline: none; font-family: inherit; transition: border-color .14s, box-shadow .14s; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(14,165,233,.1); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .form-section { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+    .overlay { position: fixed; inset: 0; background: rgba(12,26,46,.6); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 500; padding: 16px; }
+    .overlay.hidden { display: none; }
+    .dialog { background: var(--surface); border-radius: 14px; box-shadow: 0 24px 60px rgba(12,26,46,.22); width: min(95vw, 520px); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+    .dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .dialog-head h3 { font-size: 15px; font-weight: 700; }
+    .dialog-head button { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 5px; display: flex; }
+    .dialog-head button:hover { background: var(--bg); color: var(--text); }
+    .dialog-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .dialog-alert { padding: 10px 13px; border-radius: 7px; font-size: 13px; margin-bottom: 14px; display: none; }
+    .dialog-alert.show { display: block; }
+    .dialog-alert-error { background: #fee2e2; color: #991b1b; }
+
+    .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+    .pg-info { font-size: 13px; color: var(--text-muted); }
+    .pg-btns { display: flex; gap: 4px; }
+    .pg-btn { padding: 5px 11px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 13px; cursor: pointer; color: var(--text-2); transition: background .12s; }
+    .pg-btn:hover:not(:disabled) { background: var(--bg); }
+    .pg-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+    .loading { text-align: center; padding: 48px; color: var(--text-muted); }
+    .spinner { display: inline-block; width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+    .detail-item { }
+    .detail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 3px; }
+    .detail-value { font-size: 14px; color: var(--text-2); font-weight: 500; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag { padding: 3px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; color: var(--text-2); font-family: 'SF Mono','Fira Code',monospace; }
+    .info-box { background: var(--primary-light); border: 1px solid var(--border-s); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #0369a1; margin-bottom: 16px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .sidebar { display: none; }
+      .main-wrap { margin-left: 0; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <span class="sb-brand-text">PDF Tools</span>
+    </div>
+    <div class="sb-company">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.5;margin-bottom:2px">Company</div>
+      <div class="sb-company-name" id="sb-company-name">—</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Overview</div>
+      <div class="nav-link active" data-s="dashboard">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="sb-section">Team</div>
+      <div class="nav-link" data-s="employees">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Employees
+      </div>
+      <div class="nav-link" data-s="invitations">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Invitations
+      </div>
+      <div class="sb-section">Settings</div>
+      <div class="nav-link" data-s="domains">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Domains
+      </div>
+      <div class="nav-link" data-s="subscription">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Subscription
+      </div>
+      <div class="nav-link" data-s="profile">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Company Profile
+      </div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="sb-name" id="sb-name">—</div>
+          <div class="sb-role">Corporate Admin</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <span id="topbar-title">Dashboard</span>
+      <a href="../index.html" style="font-size:13px;color:var(--text-muted);text-decoration:none;">← Main site</a>
+    </header>
+    <main class="content" id="content">
+      <div class="loading"><div class="spinner"></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay hidden" id="modal">
+  <div class="dialog" id="dialog">
+    <div class="dialog-head">
+      <h3 id="dialog-title"></h3>
+      <button onclick="closeModal()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="dialog-body" id="dialog-body"></div>
+    <div class="dialog-foot" id="dialog-foot"></div>
+  </div>
+</div>
+<div id="toast-root" style="position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;"></div>
+
+<script src="../js/api-client.js"></script>
+<script>
+'use strict';
+
+let currentSection = '', me = null, myCompany = null;
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+  me = requireAuth(['corporate_admin']);
+  if (!me) return;
+
+  document.getElementById('sb-avatar').textContent = (me.first_name[0] + me.last_name[0]).toUpperCase();
+  document.getElementById('sb-name').textContent   = me.first_name + ' ' + me.last_name;
+
+  document.querySelectorAll('.nav-link[data-s]').forEach(el => {
+    el.addEventListener('click', () => navigate(el.dataset.s));
+  });
+
+  try {
+    const c = await apiFetch('GET', '/corporate/company');
+    myCompany = c.data;
+    document.getElementById('sb-company-name').textContent = myCompany.name;
+  } catch {}
+
+  const hash = location.hash.slice(1) || 'dashboard';
+  navigate(hash);
+}
+
+const TITLES = { dashboard:'Dashboard', employees:'Employees', invitations:'Invitations', domains:'Domains', subscription:'Subscription', profile:'Company Profile' };
+
+function navigate(s) {
+  currentSection = s;
+  location.hash  = s;
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.s === s));
+  document.getElementById('topbar-title').textContent = TITLES[s] || s;
+  document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const map = { dashboard:renderDashboard, employees:renderEmployees, invitations:renderInvitations, domains:renderDomains, subscription:renderSubscription, profile:renderProfile };
+  if (map[s]) map[s]().catch(err => { document.getElementById('content').innerHTML = `<div class="empty"><p>Failed to load: ${esc(err.message)}</p></div>`; });
+}
+
+window.addEventListener('hashchange', () => { const s = location.hash.slice(1)||'dashboard'; if (s!==currentSection) navigate(s); });
+
+// ── Modal ──────────────────────────────────────────────────────
+function openModal(title, body, foot = '') {
+  document.getElementById('dialog-title').textContent = title;
+  document.getElementById('dialog-body').innerHTML    = body;
+  document.getElementById('dialog-foot').innerHTML    = foot || '<button class="btn btn-ghost" onclick="closeModal()">Close</button>';
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+function dialogErr(msg) {
+  let el = document.getElementById('d-err');
+  if (!el) { el = document.createElement('div'); el.id='d-err'; el.className='dialog-alert dialog-alert-error'; document.getElementById('dialog-body').prepend(el); }
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function badge(val, cls) { return `<span class="badge badge-${cls||val}">${esc(val)}</span>`; }
+function statusBadge(s) { return badge(s||'—', s); }
+let _dt = {}; function debounce(fn, ms) { return function(...a) { clearTimeout(_dt[fn]); _dt[fn]=setTimeout(()=>fn(...a),ms); }; }
+function renderPagination(meta, cb) {
+  if (!meta || meta.total_pages <= 1) return '';
+  const { page, total_pages, total } = meta;
+  const pages = [];
+  const start = Math.max(1,page-2), end = Math.min(total_pages,page+2);
+  if (start>1) pages.push(1,'…');
+  for (let i=start;i<=end;i++) pages.push(i);
+  if (end<total_pages) pages.push('…',total_pages);
+  const btns = pages.map(p => p==='…' ? `<span class="pg-btn" style="cursor:default">…</span>` : `<button class="pg-btn${p===page?' active':''}" onclick="(${cb})(${p})">${p}</button>`).join('');
+  return `<div class="pagination"><span class="pg-info">${total} total</span><div class="pg-btns"><button class="pg-btn" onclick="(${cb})(${page-1})" ${page<=1?'disabled':''}>‹</button>${btns}<button class="pg-btn" onclick="(${cb})(${page+1})" ${page>=total_pages?'disabled':''}>›</button></div></div>`;
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+async function renderDashboard() {
+  const [emps, invs, sub] = await Promise.all([
+    apiFetch('GET', '/corporate/employees?page=1'),
+    apiFetch('GET', '/corporate/invitations'),
+    apiFetch('GET', '/corporate/subscription').catch(() => ({ data: null }))
+  ]);
+
+  const empCount = emps.meta?.total || 0;
+  const pendingInvs = (invs.data||[]).filter(i => i.status==='pending').length;
+  const s = sub.data;
+
+  document.getElementById('content').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Employees</div><div class="stat-value">${empCount}</div><div class="stat-sub">active team members</div></div>
+      <div class="stat-card"><div class="stat-label">Pending invites</div><div class="stat-value">${pendingInvs}</div><div class="stat-sub">awaiting acceptance</div></div>
+      <div class="stat-card"><div class="stat-label">Subscription</div><div class="stat-value">${s ? s.status : 'None'}</div><div class="stat-sub">${s ? esc(s.plan_name) : 'No active plan'}</div></div>
+    </div>
+    ${s ? `<div class="card"><div class="card-header"><span class="card-title">Subscription Details</span><button class="btn btn-sm btn-ghost" onclick="navigate('subscription')">View</button></div><div class="card-body"><div class="detail-grid"><div class="detail-item"><div class="detail-label">Plan</div><div class="detail-value">${esc(s.plan_name)}</div></div><div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(s.status)}</div></div><div class="detail-item"><div class="detail-label">Billing</div><div class="detail-value">${esc(s.billing_cycle||'—')}</div></div><div class="detail-item"><div class="detail-label">Renews</div><div class="detail-value">${fmtDate(s.current_period_end)}</div></div></div></div></div>` : `<div class="card"><div class="card-body"><div class="info-box">No active subscription. Please contact your administrator to set up a plan.</div></div></div>`}
+    <div class="card"><div class="card-header"><span class="card-title">Quick Actions</span></div><div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="navigate('invitations')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Invite employee</button>
+      <button class="btn btn-ghost" onclick="navigate('employees')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>View team</button>
+      <button class="btn btn-ghost" onclick="navigate('profile')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Edit company profile</button>
+    </div></div>`;
+}
+
+// ══════════════════════════════════════════
+// EMPLOYEES
+// ══════════════════════════════════════════
+let empsPage = 1;
+
+async function renderEmployees(page = 1) {
+  empsPage = page;
+  const res = await apiFetch('GET', `/corporate/employees${qs({ page })}`);
+  const rows = res.data||[], meta = res.meta||{};
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Employees</div><div class="page-sub">${meta.total||0} team members</div></div>
+      <button class="btn btn-primary" onclick="navigate('invitations')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Invite employee</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody>${rows.length ? rows.map(u => `<tr><td><strong>${esc(u.first_name)} ${esc(u.last_name)}</strong></td><td class="td-mono">${esc(u.email)}</td><td>${statusBadge(u.status)}</td><td>${fmtDate(u.created_at)}</td><td><button class="btn btn-sm btn-danger" onclick="removeEmployee('${esc(u.id)}','${esc(u.email)}')">Remove</button></td></tr>`).join('') : '<tr><td colspan="5" class="empty" style="padding:32px;text-align:center;color:var(--text-muted)">No employees yet. Invite your team!</td></tr>'}
+      </tbody></table></div>
+      ${renderPagination(meta,'renderEmployees')}
+    </div>`;
+}
+
+async function removeEmployee(userId, email) {
+  if (!confirm(`Remove ${email} from your company? They will lose access to corporate features.`)) return;
+  try {
+    await apiFetch('DELETE', `/corporate/employees/${userId}`);
+    toast('Employee removed', 'success');
+    renderEmployees(empsPage);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════
+// INVITATIONS
+// ══════════════════════════════════════════
+async function renderInvitations() {
+  const res = await apiFetch('GET', '/corporate/invitations');
+  const rows = res.data||[];
+  const pending  = rows.filter(i => i.status === 'pending');
+  const accepted = rows.filter(i => i.status === 'accepted');
+  const other    = rows.filter(i => !['pending','accepted'].includes(i.status));
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Invitations</div><div class="page-sub">${pending.length} pending, ${accepted.length} accepted</div></div>
+      <button class="btn btn-primary" onclick="showSendInvitation()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Send invitation</button>
+    </div>
+    ${pending.length ? `<div class="card">
+      <div class="card-header"><span class="card-title">Pending (${pending.length})</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Email</th><th>Sent</th><th>Expires</th><th>Actions</th></tr></thead>
+      <tbody>${pending.map(i=>`<tr><td class="td-mono">${esc(i.email)}</td><td>${fmtDate(i.created_at)}</td><td>${fmtDate(i.expires_at)}</td><td><button class="btn btn-sm btn-danger" onclick="revokeInvitation('${esc(i.id)}','${esc(i.email)}')">Revoke</button></td></tr>`).join('')}
+      </tbody></table></div>
+    </div>` : ''}
+    ${accepted.length ? `<div class="card">
+      <div class="card-header"><span class="card-title">Accepted (${accepted.length})</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Email</th><th>Accepted</th></tr></thead>
+      <tbody>${accepted.map(i=>`<tr><td class="td-mono">${esc(i.email)}</td><td>${fmtDate(i.updated_at)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>` : ''}
+    ${other.length ? `<div class="card">
+      <div class="card-header"><span class="card-title">Expired / Revoked</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Email</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${other.map(i=>`<tr><td class="td-mono">${esc(i.email)}</td><td>${statusBadge(i.status)}</td><td>${fmtDate(i.updated_at)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>` : ''}
+    ${!rows.length ? '<div class="card"><div class="empty">No invitations yet. Send one to grow your team!</div></div>' : ''}`;
+}
+
+function showSendInvitation() {
+  openModal('Send Invitation', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="info-box">An invitation email will be sent to the address below. The link expires in 7 days.</div>
+    <div class="form-group"><label class="form-label">Employee email *</label><input class="form-input" id="inv-email" type="email" placeholder="colleague@yourcompany.com"></div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitInvitation()">Send invitation</button>`);
+}
+
+async function submitInvitation() {
+  const email = document.getElementById('inv-email').value.trim();
+  if (!email) { dialogErr('Email is required.'); return; }
+  try {
+    await apiFetch('POST', '/corporate/invite', { email });
+    closeModal(); toast('Invitation sent', 'success'); renderInvitations();
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function revokeInvitation(id, email) {
+  if (!confirm(`Revoke invitation to ${email}?`)) return;
+  try {
+    await apiFetch('POST', `/corporate/invitations/${id}/revoke`);
+    toast('Invitation revoked', 'success');
+    renderInvitations();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════
+// DOMAINS
+// ══════════════════════════════════════════
+async function renderDomains() {
+  const res = await apiFetch('GET', '/corporate/domains');
+  const rows = res.data||[];
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Domains</div><div class="page-sub">Whitelisted email domains for auto-join</div></div>
+      <button class="btn btn-primary" onclick="showAddDomain()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add domain</button>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="info-box">Employees who sign up with an email matching a whitelisted domain are automatically associated with your company.</div>
+        ${rows.length ? `<div class="tag-list">${rows.map(d=>`<div class="tag" style="display:flex;align-items:center;gap:8px;padding:6px 12px">${esc(d.domain)}<button onclick="removeDomain('${esc(d.id)}','${esc(d.domain)}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;line-height:1;padding:0;margin:0">×</button></div>`).join('')}</div>` : '<div class="empty" style="padding:32px 0;text-align:center;color:var(--text-muted)">No domains added yet.</div>'}
+      </div>
+    </div>`;
+}
+
+function showAddDomain() {
+  openModal('Add Domain', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Domain *</label><input class="form-input" id="dom-val" placeholder="yourcompany.com"><div class="form-hint">Enter without @ or http://</div></div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitAddDomain()">Add domain</button>`);
+}
+
+async function submitAddDomain() {
+  const domain = document.getElementById('dom-val').value.trim().replace(/^@|https?:\/\//g,'');
+  if (!domain) { dialogErr('Domain is required.'); return; }
+  try {
+    await apiFetch('POST', '/corporate/domains', { domain });
+    closeModal(); toast('Domain added', 'success'); renderDomains();
+  } catch(e) { dialogErr(e.message); }
+}
+
+async function removeDomain(id, domain) {
+  if (!confirm(`Remove domain "${domain}"?`)) return;
+  try {
+    await apiFetch('DELETE', `/corporate/domains/${id}`);
+    toast('Domain removed', 'success'); renderDomains();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════
+// SUBSCRIPTION
+// ══════════════════════════════════════════
+async function renderSubscription() {
+  const res = await apiFetch('GET', '/corporate/subscription').catch(() => ({ data: null }));
+  const s = res.data;
+
+  if (!s) {
+    document.getElementById('content').innerHTML = `
+      <div class="page-title" style="margin-bottom:16px">Subscription</div>
+      <div class="card"><div class="card-body">
+        <div class="info-box">Your company does not have an active subscription. Contact your administrator to get set up.</div>
+      </div></div>`;
+    return;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-title" style="margin-bottom:16px">Subscription</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">${esc(s.plan_name)}</span>${statusBadge(s.status)}</div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(s.status)}</div></div>
+          <div class="detail-item"><div class="detail-label">Billing cycle</div><div class="detail-value">${esc(s.billing_cycle||'—')}</div></div>
+          <div class="detail-item"><div class="detail-label">Type</div><div class="detail-value">${esc(s.subscription_type||'—')}</div></div>
+          <div class="detail-item"><div class="detail-label">Max seats</div><div class="detail-value">${s.max_seats||'Unlimited'}</div></div>
+          <div class="detail-item"><div class="detail-label">Current period start</div><div class="detail-value">${fmtDate(s.current_period_start)}</div></div>
+          <div class="detail-item"><div class="detail-label">Current period end</div><div class="detail-value">${fmtDate(s.current_period_end)}</div></div>
+          <div class="detail-item"><div class="detail-label">Trial ends</div><div class="detail-value">${fmtDate(s.trial_ends_at)||'N/A'}</div></div>
+          <div class="detail-item"><div class="detail-label">Auto-renews</div><div class="detail-value">${s.cancel_at_period_end ? badge('no','no') : badge('yes','yes')}</div></div>
+        </div>
+        ${s.status === 'active' && !s.cancel_at_period_end ? `<hr class="divider"><button class="btn btn-ghost" style="color:var(--danger);border-color:#fca5a5" onclick="cancelSubscription('${esc(s.id)}')">Cancel at period end</button>` : ''}
+      </div>
+    </div>`;
+}
+
+async function cancelSubscription(id) {
+  if (!confirm('Cancel subscription? It will remain active until the end of the current billing period.')) return;
+  try {
+    await apiFetch('POST', `/corporate/subscription/${id}/cancel`);
+    toast('Subscription will be cancelled at period end', 'success');
+    renderSubscription();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════
+// COMPANY PROFILE
+// ══════════════════════════════════════════
+async function renderProfile() {
+  const res = await apiFetch('GET', '/corporate/company');
+  const c = res.data;
+  myCompany = c;
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Company Profile</div><div class="page-sub">Your organisation details</div></div>
+      <button class="btn btn-primary" onclick="showEditProfile()">Edit profile</button>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Company name</div><div class="detail-value">${esc(c.name)}</div></div>
+          <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(c.status)}</div></div>
+          <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value td-mono" style="font-size:13px">${esc(c.email)}</div></div>
+          <div class="detail-item"><div class="detail-label">Phone</div><div class="detail-value">${esc(c.phone||'—')}</div></div>
+          <div class="detail-item"><div class="detail-label">Address</div><div class="detail-value">${esc(c.address||'—')}</div></div>
+          <div class="detail-item"><div class="detail-label">Billing email</div><div class="detail-value td-mono" style="font-size:13px">${esc(c.billing_email||c.email)}</div></div>
+          <div class="detail-item"><div class="detail-label">Tax ID</div><div class="detail-value">${esc(c.tax_id||'—')}</div></div>
+          <div class="detail-item"><div class="detail-label">Created</div><div class="detail-value">${fmtDate(c.created_at)}</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function showEditProfile() {
+  if (!myCompany) return;
+  const c = myCompany;
+  openModal('Edit Company Profile', `
+    <div id="d-err" class="dialog-alert dialog-alert-error"></div>
+    <div class="form-group"><label class="form-label">Company name *</label><input class="form-input" id="ep-name" value="${esc(c.name)}"></div>
+    <div class="form-group"><label class="form-label">Email *</label><input class="form-input" id="ep-email" type="email" value="${esc(c.email)}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ep-phone" value="${esc(c.phone||'')}"></div>
+      <div class="form-group"><label class="form-label">Tax ID</label><input class="form-input" id="ep-tax" value="${esc(c.tax_id||'')}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Address</label><textarea class="form-textarea" id="ep-addr">${esc(c.address||'')}</textarea></div>
+    <div class="form-group"><label class="form-label">Billing email</label><input class="form-input" id="ep-billing" type="email" value="${esc(c.billing_email||'')}" placeholder="Same as email"></div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitEditProfile()">Save changes</button>`);
+}
+
+async function submitEditProfile() {
+  try {
+    const data = { name:document.getElementById('ep-name').value.trim(), email:document.getElementById('ep-email').value.trim(), phone:document.getElementById('ep-phone').value.trim(), tax_id:document.getElementById('ep-tax').value.trim(), address:document.getElementById('ep-addr').value.trim(), billing_email:document.getElementById('ep-billing').value.trim() };
+    await apiFetch('PUT', '/corporate/company', data);
+    closeModal(); toast('Profile updated', 'success'); renderProfile();
+  } catch(e) { dialogErr(e.message); }
+}
+
+init();
+</script>
+</body>
+</html>

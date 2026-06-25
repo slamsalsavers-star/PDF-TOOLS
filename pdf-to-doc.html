@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PDF Merger — PDF Tools Hub</title>
+  <title>PDF to Word — PDF Tools Hub</title>
   <link rel="stylesheet" href="css/shared.css" />
-  <link rel="stylesheet" href="css/pdf-merger.css" />
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <link rel="stylesheet" href="css/pdf-to-doc.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
@@ -16,8 +15,8 @@
 
   <header class="app-header">
     <div>
-      <h1>PDF Merger</h1>
-      <p>Combine multiple PDFs into one — entirely in your browser.</p>
+      <h1>PDF to Word</h1>
+      <p>Convert PDFs to editable .docx — entirely in your browser. Nothing is uploaded.</p>
     </div>
     <a href="index.html" class="back-link">← Back to Hub</a>
   </header>
@@ -25,14 +24,36 @@
   <div class="card">
     <!-- Upload -->
     <div class="section">
-      <input type="file" id="pdfFiles" accept="application/pdf" multiple style="display:none" />
+      <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
       <div class="upload-zone" id="uploadZone">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <h3>Drop PDF files here</h3>
-        <p>or click to browse — you can select multiple files at once</p>
+        <h3>Drop your PDF here</h3>
+        <p>or click to browse</p>
+        <div class="chosen-file" id="chosenFileName"></div>
       </div>
+    </div>
+
+    <!-- Mode -->
+    <div class="section">
+      <div class="section-label">Conversion Mode</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="text">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round"/>
+          </svg>
+          Text &mdash; Editable
+        </button>
+        <button class="mode-btn" data-mode="image">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 15l4-4 3 3 4-5 4 6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Image &mdash; Exact Layout
+        </button>
+      </div>
+      <p class="mode-hint" id="modeHint">Extracts text and preserves basic formatting. Best for text-heavy PDFs.</p>
     </div>
 
     <!-- Controls -->
@@ -40,20 +61,20 @@
       <div class="toolbar">
         <div class="field-row">
           <label for="outputName">Output filename</label>
-          <input type="text" id="outputName" class="input w-48" placeholder="merged" />
+          <input type="text" id="outputName" class="input w-48" placeholder="converted" />
         </div>
         <div class="toolbar-sep"></div>
-        <button id="mergeBtn" class="btn btn-success" disabled>
+        <button id="convertBtn" class="btn btn-success" disabled>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M8 6H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-3M15 3H9v4h6V3z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Merge &amp; Download
+          Convert &amp; Download
         </button>
         <button id="clearBtn" class="btn btn-danger btn-sm" disabled>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Clear All
+          Clear
         </button>
       </div>
     </div>
@@ -65,20 +86,7 @@
       </div>
       <div class="status-bar" id="statusBar">
         <div class="status-dot"></div>
-        <span id="statusText">Add PDF files to begin.</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- File List -->
-  <div id="fileListWrap" style="display:none">
-    <div class="card">
-      <div class="section">
-        <div class="section-label">
-          Files to merge
-          <span class="count-badge" id="countBadge"></span>
-        </div>
-        <div class="file-list" id="fileList"></div>
+        <span id="statusText">Drop a PDF file to get started.</span>
       </div>
     </div>
   </div>
@@ -86,17 +94,17 @@
   <!-- Empty State -->
   <div id="emptyState" class="empty-state">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-      <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 2v6h6M8 13h8M8 17h5" stroke-linecap="round"/>
     </svg>
-    <p>No files added — drop PDFs above or click to browse.</p>
+    <p>No PDF loaded — drop a file above or click to browse.</p>
   </div>
 
 </div>
 
-<!-- Toasts -->
 <div id="toast-root"></div>
 
 <script src="js/utils.js" defer></script>
-<script src="js/pdf-merger.js" defer></script>
+<script src="js/pdf-to-doc.js" defer></script>
 </body>
 </html>
