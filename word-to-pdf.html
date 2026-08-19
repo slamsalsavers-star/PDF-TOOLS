@@ -1,0 +1,746 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word to PDF — batch converter</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper:   #e7ebf2;
+    --slip:    #ffffff;
+    --ink:     #171b2e;
+    --muted:   #626b87;
+    --rule:    #c3cbdb;
+    --mimeo:   #4f34c4;
+    --mimeo-t: #ece7fd;
+    --ok:      #10684c;
+    --bad:     #a52218;
+
+    --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 40px 20px 80px;
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+    pointer-events: none;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; position: relative; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    border: 2px solid var(--ink);
+    background: var(--slip);
+    padding: 22px 24px 20px;
+    box-shadow: 6px 6px 0 rgba(23,27,46,.14);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--mimeo);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(30px, 6vw, 44px);
+    line-height: .98;
+    letter-spacing: -.035em;
+    font-weight: 700;
+    margin: 0;
+  }
+  h1 .arrow { color: var(--mimeo); font-weight: 500; }
+  .lede { margin: 12px 0 0; max-width: 46ch; color: var(--muted); }
+  .privacy {
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono); font-size: 12px; color: var(--ink);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .privacy b { color: var(--mimeo); font-weight: 600; }
+
+  /* ---------- drop zone ---------- */
+  .drop {
+    margin-top: 22px;
+    border: 2px dashed var(--rule);
+    background: rgba(255,255,255,.7);
+    padding: 34px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .drop:hover, .drop:focus-visible { border-color: var(--mimeo); background: var(--slip); }
+  .drop.over { border-color: var(--mimeo); background: var(--mimeo-t); transform: scale(1.005); }
+  .drop:focus-visible { outline: 3px solid var(--mimeo); outline-offset: 3px; }
+  .drop strong { display: block; font-size: 17px; }
+  .drop span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  /* ---------- settings ---------- */
+  .settings {
+    margin-top: 18px;
+    border: 2px solid var(--ink);
+    background: var(--slip);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .field { padding: 12px 14px; border-right: 1px solid var(--rule); }
+  .field:last-child { border-right: 0; }
+  .field label {
+    display: block;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .field select {
+    width: 100%; border: 0; background: transparent;
+    font-family: var(--sans); font-size: 14px; font-weight: 500;
+    color: var(--ink); padding: 2px 0; cursor: pointer;
+  }
+  .field select:focus-visible { outline: 2px solid var(--mimeo); outline-offset: 2px; }
+
+  /* ---------- docket list ---------- */
+  .docket { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; }
+
+  .slip {
+    position: relative;
+    background: var(--slip);
+    border: 1px solid var(--rule);
+    border-left: 0;
+    padding: 14px 16px 14px 26px;
+    display: flex; align-items: center; gap: 14px;
+    animation: slipIn .22s ease-out;
+  }
+  .slip::before {           /* perforated carbon-copy edge */
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0; width: 10px;
+    background:
+      radial-gradient(circle at 5px 5px, var(--paper) 2.5px, transparent 2.6px) 0 0/10px 10px;
+    border-right: 1px dashed var(--rule);
+  }
+  @keyframes slipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }
+
+  .slip .meta { flex: 1; min-width: 0; }
+  .slip .name {
+    font-weight: 600; font-size: 14.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .slip .sub { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .slip .sub.warn { color: var(--bad); }
+
+  .stamp {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase;
+    padding: 4px 8px; border: 1.5px solid currentColor;
+    color: var(--muted); white-space: nowrap;
+  }
+  .stamp.working { color: var(--mimeo); }
+  .stamp.done    { color: var(--ok); transform: rotate(-2.5deg); animation: stampIn .2s ease-out; }
+  .stamp.failed  { color: var(--bad); transform: rotate(-2.5deg); }
+  @keyframes stampIn { from { transform: scale(1.35) rotate(-2.5deg); opacity: 0; } }
+
+  .btn {
+    font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+    padding: 8px 14px; border: 1.5px solid var(--ink); background: var(--slip);
+    color: var(--ink); cursor: pointer; white-space: nowrap;
+    transition: background .12s, color .12s;
+  }
+  .btn:hover { background: var(--ink); color: var(--slip); }
+  .btn:focus-visible { outline: 3px solid var(--mimeo); outline-offset: 2px; }
+  .btn.ghost { border-color: var(--rule); color: var(--muted); }
+  .btn.ghost:hover { background: var(--rule); color: var(--ink); }
+  .btn.primary { background: var(--mimeo); border-color: var(--mimeo); color: #fff; }
+  .btn.primary:hover { background: #3b249e; border-color: #3b249e; }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; }
+  .btn[disabled]:hover { background: var(--slip); color: var(--ink); }
+  .btn.primary[disabled]:hover { background: var(--mimeo); color: #fff; }
+
+  .actions {
+    margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+  .actions .count {
+    margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+
+  .note {
+    margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--rule);
+    font-size: 13px; color: var(--muted);
+  }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  @media (max-width: 620px) {
+    .settings { grid-template-columns: repeat(2, 1fr); }
+    .field:nth-child(2) { border-right: 0; }
+    .field:nth-child(1), .field:nth-child(2) { border-bottom: 1px solid var(--rule); }
+    .slip { flex-wrap: wrap; }
+    .slip .meta { flex-basis: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/word-to-pdf.css">
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="masthead-top">
+      <div>
+        <p class="eyebrow">Batch document converter</p>
+        <h1>Word <span class="arrow">&rarr;</span> PDF</h1>
+      </div>
+      <a href="index.html" class="back-link">← Back to Hub</a>
+    </div>
+    <p class="lede">Drop in as many <code>.docx</code> files as you like. Each one comes back as a PDF with real, selectable text — not a screenshot of a page.</p>
+    <div class="privacy"><b>Local only.</b> <span>Your files are read in this browser and never uploaded.</span></div>
+  </div>
+
+  <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose Word files to convert">
+    <strong>Drop .docx files here</strong>
+    <span>or click to browse — multiple files welcome</span>
+  </div>
+  <input type="file" id="picker" accept=".docx" multiple hidden>
+
+  <div class="settings">
+    <div class="field">
+      <label for="pageSize">Page size</label>
+      <select id="pageSize">
+        <option value="a4">A4</option>
+        <option value="letter">Letter</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="margin">Margins</label>
+      <select id="margin">
+        <option value="36">Narrow</option>
+        <option value="57" selected>Normal</option>
+        <option value="85">Wide</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="font">Typeface</label>
+      <select id="font">
+        <option value="helvetica">Sans</option>
+        <option value="times">Serif</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="pageNums">Page numbers</label>
+      <select id="pageNums">
+        <option value="yes" selected>Show</option>
+        <option value="no">Hide</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="docket" id="docket"></div>
+
+  <div class="actions" id="actions" hidden>
+    <button class="btn primary" id="convertAll">Convert all</button>
+    <button class="btn" id="zipAll" disabled>Download all as .zip</button>
+    <button class="btn ghost" id="clearAll">Clear list</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <p class="note"><b>Good to know:</b> headings, bold and italic text, lists, tables, images and links all carry over. Older <code>.doc</code> files need to be saved as <code>.docx</code> first, and text uses the Latin alphabet — scripts like Devanagari, Chinese or Arabic won't render with the built-in PDF fonts.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), picker = $("picker"), docket = $("docket"), actions = $("actions");
+
+  /** @type {{id:number,file:File,state:string,blob:Blob|null,pages:number,msg:string,el:HTMLElement}[]} */
+  let items = [];
+  let nextId = 1;
+
+  /* ------------------------------------------------------------------ */
+  /*  File intake                                                        */
+  /* ------------------------------------------------------------------ */
+
+  drop.addEventListener("click", () => picker.click());
+  drop.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); picker.click(); }
+  });
+  picker.addEventListener("change", () => { addFiles(picker.files); picker.value = ""; });
+
+  ["dragenter", "dragover"].forEach(ev =>
+    drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev =>
+    drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+
+  function addFiles(fileList) {
+    for (const file of fileList) {
+      const legacy = /\.doc$/i.test(file.name);
+      const valid = /\.docx$/i.test(file.name);
+      if (!valid && !legacy) continue;
+      const item = {
+        id: nextId++, file, blob: null, pages: 0,
+        state: legacy ? "failed" : "queued",
+        msg: legacy ? "Save this as .docx in Word first" : "",
+        el: null
+      };
+      items.push(item);
+      renderSlip(item);
+    }
+    refreshChrome();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Docket rendering                                                   */
+  /* ------------------------------------------------------------------ */
+
+  const STAMPS = {
+    queued:  ["Queued", ""],
+    working: ["Converting", "working"],
+    done:    ["Done", "done"],
+    failed:  ["Failed", "failed"]
+  };
+
+  function renderSlip(item) {
+    const el = document.createElement("div");
+    el.className = "slip";
+    el.innerHTML =
+      '<div class="meta"><div class="name"></div><div class="sub"></div></div>' +
+      '<div class="stamp"></div>' +
+      '<button class="btn" hidden>Save PDF</button>';
+    el.querySelector(".name").textContent = item.file.name;
+    el.querySelector("button").addEventListener("click", () => saveOne(item));
+    item.el = el;
+    docket.appendChild(el);
+    paint(item);
+  }
+
+  function paint(item) {
+    const el = item.el;
+    const [label, cls] = STAMPS[item.state];
+    const stamp = el.querySelector(".stamp");
+    stamp.textContent = label;
+    stamp.className = "stamp " + cls;
+
+    const sub = el.querySelector(".sub");
+    sub.classList.toggle("warn", item.state === "failed");
+    if (item.msg) sub.textContent = item.msg;
+    else if (item.state === "done") sub.textContent = item.pages + (item.pages === 1 ? " page" : " pages") + " · " + kb(item.blob.size);
+    else sub.textContent = kb(item.file.size);
+
+    el.querySelector("button").hidden = item.state !== "done";
+  }
+
+  function kb(bytes) {
+    return bytes < 1024 * 1024
+      ? Math.max(1, Math.round(bytes / 1024)) + " KB"
+      : (bytes / 1048576).toFixed(1) + " MB";
+  }
+
+  function refreshChrome() {
+    actions.hidden = items.length === 0;
+    const done = items.filter(i => i.state === "done").length;
+    const pending = items.filter(i => i.state === "queued").length;
+    $("count").textContent = items.length ? done + " of " + items.length + " converted" : "";
+    $("convertAll").disabled = pending === 0;
+    $("convertAll").textContent = pending > 1 ? "Convert " + pending + " files" : "Convert";
+    $("zipAll").disabled = done < 2;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Actions                                                            */
+  /* ------------------------------------------------------------------ */
+
+  $("convertAll").addEventListener("click", async () => {
+    $("convertAll").disabled = true;
+    for (const item of items) {
+      if (item.state !== "queued") continue;
+      item.state = "working"; item.msg = ""; paint(item);
+      await new Promise(r => setTimeout(r, 0));   // let the stamp paint
+      try {
+        const out = await convert(item.file, readSettings());
+        item.blob = out.blob; item.pages = out.pages; item.state = "done"; item.msg = out.warning || "";
+      } catch (err) {
+        item.state = "failed";
+        item.msg = (err && err.message) ? err.message : "Couldn't read this file";
+        console.error(err);
+      }
+      paint(item);
+      refreshChrome();
+    }
+    refreshChrome();
+  });
+
+  $("clearAll").addEventListener("click", () => {
+    items = []; docket.innerHTML = ""; refreshChrome();
+  });
+
+  function saveOne(item) {
+    download(item.blob, item.file.name.replace(/\.docx?$/i, "") + ".pdf");
+  }
+
+  $("zipAll").addEventListener("click", async () => {
+    const btn = $("zipAll");
+    btn.disabled = true; btn.textContent = "Zipping…";
+    try {
+      const zip = new JSZip();
+      const used = {};
+      for (const item of items.filter(i => i.state === "done")) {
+        let name = item.file.name.replace(/\.docx?$/i, "") + ".pdf";
+        if (used[name]) name = name.replace(/\.pdf$/, "") + " (" + (++used[name]) + ").pdf";
+        else used[name] = 1;
+        zip.file(name, item.blob);
+      }
+      download(await zip.generateAsync({ type: "blob" }), "converted-pdfs.zip");
+    } finally {
+      btn.textContent = "Download all as .zip"; btn.disabled = false;
+    }
+  });
+
+  function download(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  function readSettings() {
+    return {
+      format: $("pageSize").value,
+      margin: parseFloat($("margin").value),
+      font: $("font").value,
+      pageNumbers: $("pageNums").value === "yes"
+    };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  DOCX -> PDF                                                        */
+  /* ------------------------------------------------------------------ */
+
+  async function convert(file, opts) {
+    if (typeof mammoth === "undefined" || !window.jspdf)
+      throw new Error("Converter libraries didn't load — check your connection and reload");
+
+    const arrayBuffer = await file.arrayBuffer();
+    let html;
+    try {
+      html = (await mammoth.convertToHtml({ arrayBuffer })).value;
+    } catch (e) {
+      throw new Error("This doesn't look like a valid .docx file");
+    }
+
+    const host = document.createElement("div");
+    host.innerHTML = html;
+
+    const images = await preloadImages(host);
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: opts.format, compress: true });
+    const r = makeRenderer(doc, opts, images);
+
+    for (const node of Array.from(host.childNodes)) r.block(node, 0);
+
+    if (opts.pageNumbers) r.stampPageNumbers();
+
+    const warning = /[^\u0000-\u00FF]/.test(host.textContent || "")
+      ? "Converted — some non-Latin characters may not display"
+      : "";
+
+    return { blob: doc.output("blob"), pages: doc.internal.getNumberOfPages(), warning };
+  }
+
+  function preloadImages(host) {
+    const nodes = Array.from(host.querySelectorAll("img"));
+    return Promise.all(nodes.map(node => new Promise((resolve) => {
+      const probe = new Image();
+      probe.onload = () => resolve([node, { src: node.src, w: probe.naturalWidth, h: probe.naturalHeight }]);
+      probe.onerror = () => resolve([node, null]);
+      probe.src = node.src;
+    }))).then(pairs => new Map(pairs.filter(p => p[1])));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Renderer                                                           */
+  /* ------------------------------------------------------------------ */
+
+  function makeRenderer(doc, opts, images) {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = opts.margin;
+    const fullW = pageW - M * 2;
+    const BASE = 11;
+    const LEAD = 1.4;
+    const INK = [23, 27, 46];
+    const LINK = [79, 52, 196];
+    const RULE = [175, 185, 205];
+
+    const HEADING = { h1: [21, 18, 8], h2: [16, 15, 6], h3: [13.5, 13, 5], h4: [12, 12, 4], h5: [11, 11, 4], h6: [11, 11, 4] };
+
+    let y = M;
+
+    function useFont(st) {
+      const style = st.bold && st.italic ? "bolditalic" : st.bold ? "bold" : st.italic ? "italic" : "normal";
+      doc.setFont(opts.font, style);
+      doc.setFontSize(st.size || BASE);
+    }
+
+    function room(h) {
+      if (y + h > pageH - M) { doc.addPage(); y = M; }
+    }
+
+    /* ---- inline runs ---- */
+
+    function runs(node, style, out) {
+      node.childNodes.forEach((child) => {
+        if (child.nodeType === 3) {
+          const text = child.textContent.replace(/\s+/g, " ");
+          if (text) out.push(Object.assign({ text }, style));
+          return;
+        }
+        if (child.nodeType !== 1) return;
+        const tag = child.tagName.toLowerCase();
+        if (tag === "br") { out.push({ br: true }); return; }
+        if (tag === "img") return;                       // handled as a block
+        const st = Object.assign({}, style);
+        if (tag === "strong" || tag === "b") st.bold = true;
+        if (tag === "em" || tag === "i") st.italic = true;
+        if (tag === "a") st.color = LINK;
+        if (tag === "sup" || tag === "sub") st.size = (st.size || BASE) * 0.72;
+        runs(child, st, out);
+      });
+    }
+
+    function layout(list, maxW) {
+      const lines = [];
+      let line = [], used = 0;
+      const flush = () => { lines.push(line); line = []; used = 0; };
+
+      for (const run of list) {
+        if (run.br) { flush(); continue; }
+        useFont(run);
+        for (let token of run.text.split(/(\s+)/)) {
+          if (!token) continue;
+          const space = /^\s+$/.test(token);
+          if (space && used === 0) continue;
+          let w = doc.getTextWidth(token);
+
+          if (!space && w > maxW) {                      // break an over-long word
+            for (const piece of chop(token, maxW)) {
+              const pw = doc.getTextWidth(piece);
+              if (used + pw > maxW && used > 0) flush();
+              line.push({ text: piece, run, w: pw }); used += pw;
+            }
+            continue;
+          }
+          if (used + w > maxW && used > 0) {
+            if (space) { flush(); continue; }
+            flush();
+          }
+          line.push({ text: token, run, w }); used += w;
+        }
+      }
+      if (line.length) lines.push(line);
+      return lines;
+    }
+
+    function chop(token, maxW) {
+      const pieces = []; let cur = "";
+      for (const ch of token) {
+        if (doc.getTextWidth(cur + ch) > maxW && cur) { pieces.push(cur); cur = ""; }
+        cur += ch;
+      }
+      if (cur) pieces.push(cur);
+      return pieces;
+    }
+
+    function paintLines(lines, left, top, opts2) {
+      let cursor = top;
+      for (const line of lines) {
+        const size = Math.max(BASE, ...line.map(s => s.run.size || BASE));
+        const lh = size * LEAD;
+        if (!opts2 || !opts2.noBreak) room(lh);
+        let x = left;
+        for (const seg of line) {
+          useFont(seg.run);
+          doc.setTextColor.apply(doc, seg.run.color || INK);
+          doc.text(seg.text, x, (opts2 && opts2.noBreak ? cursor : y) + size * 0.92);
+          x += seg.w;
+        }
+        if (opts2 && opts2.noBreak) cursor += lh; else y += lh;
+      }
+      doc.setTextColor.apply(doc, INK);
+    }
+
+    /* ---- blocks ---- */
+
+    function paragraph(el, indent, style, spaceAfter, prefix) {
+      const list = [];
+      runs(el, style || {}, list);
+      const left = M + indent;
+      const width = fullW - indent;
+      const lines = layout(list, width);
+
+      if (!lines.length || (lines.length === 1 && !lines[0].length)) { y += BASE * 0.6; return; }
+
+      if (prefix) {                                       // list bullet / number
+        const size = style && style.size ? style.size : BASE;
+        room(size * LEAD);
+        useFont({ size });
+        doc.setTextColor.apply(doc, INK);
+        doc.text(prefix, left - 16, y + size * 0.92);
+      }
+      paintLines(lines, left, y);
+      y += spaceAfter == null ? 8 : spaceAfter;
+    }
+
+    function image(el) {
+      const info = images.get(el);
+      if (!info) return;
+      let w = info.w * 0.75, h = info.h * 0.75;           // 96dpi px -> pt
+      if (w > fullW) { h *= fullW / w; w = fullW; }
+      const cap = pageH - M * 2;
+      if (h > cap) { w *= cap / h; h = cap; }
+      room(h);
+      try { doc.addImage(info.src, M, y, w, h); } catch (e) { /* unsupported format */ }
+      y += h + 10;
+    }
+
+    function table(el, indent) {
+      const rows = Array.from(el.querySelectorAll("tr"));
+      if (!rows.length) return;
+      const cols = Math.max.apply(null, rows.map(r => r.children.length));
+      const colW = (fullW - indent) / cols;
+      const pad = 6;
+
+      for (const row of rows) {
+        const cells = Array.from(row.children).map((cell) => {
+          const list = [];
+          runs(cell, { size: BASE * 0.94, bold: cell.tagName.toLowerCase() === "th" }, list);
+          return layout(list, colW - pad * 2);
+        });
+        const tallest = Math.max.apply(null, cells.map(c => Math.max(1, c.length)));
+        const rowH = tallest * (BASE * 0.94 * LEAD) + pad * 2;
+        room(rowH);
+
+        let x = M + indent;
+        doc.setDrawColor.apply(doc, RULE);
+        doc.setLineWidth(0.5);
+        for (const lines of cells) {
+          doc.rect(x, y, colW, rowH);
+          paintLines(lines, x + pad, y + pad, { noBreak: true });
+          x += colW;
+        }
+        y += rowH;
+      }
+      y += 10;
+    }
+
+    function block(node, indent) {
+      if (node.nodeType === 3) {
+        if (node.textContent.trim()) paragraph(node.parentNode || node, indent);
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      const tag = node.tagName.toLowerCase();
+
+      for (const img of node.querySelectorAll ? node.querySelectorAll("img") : []) {
+        // images render as their own block, before the text of their paragraph
+        if (tag !== "table") { image(img); }
+      }
+
+      if (HEADING[tag]) {
+        const [size, , after] = HEADING[tag];
+        y += tag === "h1" ? 6 : 12;
+        paragraph(node, indent, { size, bold: true }, after);
+        return;
+      }
+
+      switch (tag) {
+        case "p":
+          paragraph(node, indent);
+          return;
+
+        case "ul":
+        case "ol": {
+          let n = 1;
+          for (const li of Array.from(node.children)) {
+            if (li.tagName.toLowerCase() !== "li") continue;
+            const nested = Array.from(li.children).filter(c => /^(ul|ol)$/i.test(c.tagName));
+            const clone = li.cloneNode(true);
+            Array.from(clone.children).forEach(c => { if (/^(ul|ol)$/i.test(c.tagName)) clone.removeChild(c); });
+            paragraph(clone, indent + 18, {}, 4, node.tagName.toLowerCase() === "ol" ? (n++) + "." : "\u2022");
+            nested.forEach(sub => block(sub, indent + 18));
+          }
+          y += 6;
+          return;
+        }
+
+        case "table":
+          table(node, indent);
+          return;
+
+        case "blockquote": {
+          const start = y;
+          Array.from(node.childNodes).forEach(child => block(child, indent + 20));
+          doc.setDrawColor.apply(doc, LINK);
+          doc.setLineWidth(2);
+          if (y > start) doc.line(M + indent + 6, start, M + indent + 6, Math.min(y - 6, pageH - M));
+          return;
+        }
+
+        case "hr":
+          room(14);
+          doc.setDrawColor.apply(doc, RULE);
+          doc.setLineWidth(0.7);
+          doc.line(M, y + 6, pageW - M, y + 6);
+          y += 16;
+          return;
+
+        case "img":
+          image(node);
+          return;
+
+        default:
+          Array.from(node.childNodes).forEach(child => block(child, indent));
+      }
+    }
+
+    function stampPageNumbers() {
+      const total = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= total; p++) {
+        doc.setPage(p);
+        doc.setFont(opts.font, "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(140, 148, 168);
+        doc.text(String(p), pageW / 2, pageH - M / 2, { align: "center" });
+      }
+      doc.setTextColor.apply(doc, INK);
+    }
+
+    return { block, stampPageNumbers };
+  }
+})();
+</script>

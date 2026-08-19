@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Tools — Private Browser-Based PDF Utilities</title>
+  <meta name="description" content="Simple PDF tools that process your files locally in the browser." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/index.css" />
+</head>
+<body>
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html">
+        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+          <rect width="36" height="36" rx="10" fill="#059669" />
+          <path d="M10 9h11l6 6v13H10V9z" fill="white" fill-opacity="0.18" stroke="white" stroke-width="1.6" stroke-linejoin="round" />
+          <path d="M21 9v6h6M13 18h10M13 22h7" stroke="white" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span>PDF<strong>Tools</strong></span>
+      </a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-bg-grid" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="hero-badge"><span class="badge-dot"></span>Zero-upload · Privacy-first · 100% in your browser</div>
+        <h1>PDF tools that<br><span class="hero-gradient">never touch a server</span></h1>
+        <p class="hero-sub">Split, merge, edit, convert, and OCR PDFs instantly. Your files stay on your device while every tool runs locally in your browser.</p>
+        <div class="hero-actions">
+          <a href="#tools" class="btn-hero-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2" /><path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            Choose a tool
+          </a>
+          <a href="#tools" class="btn-hero-ghost">See all tools &darr;</a>
+        </div>
+        <div class="hero-proof">
+          <div class="proof-item"><span aria-hidden="true">✓</span> No uploads</div>
+          <div class="proof-item"><span aria-hidden="true">✓</span> No account</div>
+          <div class="proof-item"><span aria-hidden="true">✓</span> No install</div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="devtools-card">
+          <div class="devtools-bar"><div class="devtools-dots"><span></span><span></span><span></span></div><span class="devtools-title">DevTools — Network</span></div>
+          <div class="devtools-body">
+            <div class="devtools-row devtools-header-row"><span>Name</span><span>Status</span><span>Type</span><span>Size</span></div>
+            <div class="devtools-row devtools-file-row"><span class="file-name">[file] contract.pdf</span><span class="status-local">— (local)</span><span>document</span><span>2.3 MB</span></div>
+            <div class="devtools-row devtools-file-row"><span class="file-name">[file] medical-record.pdf</span><span class="status-local">— (local)</span><span>document</span><span>890 KB</span></div>
+            <div class="devtools-empty"><span>◉</span><span>0 requests sent to any server</span></div>
+          </div>
+          <div class="devtools-badge">◉ Your files never left the browser</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tools" class="tools-section">
+    <div class="section-wrap">
+      <div class="section-tag">PDF tools</div>
+      <h2 class="section-title">Choose what you need</h2>
+      <p class="section-sub">Focused tools for everyday PDF work. Select one to get started.</p>
+
+      <div class="tools-grid">
+        <a class="tool-card" href="pdf-splitter.html">
+          <div class="tool-card-top"><div class="tool-icon tc-blue">↗</div><span class="tool-tag">PDF</span></div>
+          <h3>PDF Splitter</h3>
+          <p>Extract individual pages or custom page ranges from a PDF and download them separately.</p>
+          <span class="tool-link">Open Splitter &rarr;</span>
+        </a>
+        <a class="tool-card" href="pdf-merger.html">
+          <div class="tool-card-top"><div class="tool-icon tc-violet">↙</div><span class="tool-tag">PDF</span></div>
+          <h3>PDF Merger</h3>
+          <p>Combine multiple PDF files, reorder them, and download one merged document.</p>
+          <span class="tool-link">Open Merger &rarr;</span>
+        </a>
+        <a class="tool-card tc-featured" href="pdf-editor.html">
+          <div class="tool-card-top"><div class="tool-icon tc-green">✎</div><span class="tool-tag tag-new">Editor</span></div>
+          <h3>PDF Editor</h3>
+          <p>Add text, highlights, drawings, signatures, shapes, tables, and form fields to PDFs.</p>
+          <span class="tool-link">Open Editor &rarr;</span>
+        </a>
+        <a class="tool-card" href="pdf-to-doc.html">
+          <div class="tool-card-top"><div class="tool-icon tc-amber">↓</div><span class="tool-tag">Convert</span></div>
+          <h3>PDF to Word</h3>
+          <p>Convert PDFs into editable DOCX files while preserving text, headings, images, and tables.</p>
+          <span class="tool-link">Open Converter &rarr;</span>
+        </a>
+        <a class="tool-card" href="word-to-pdf.html">
+          <div class="tool-card-top"><div class="tool-icon tc-blue">→</div><span class="tool-tag">Convert</span></div>
+          <h3>Word to PDF</h3>
+          <p>Convert one or many DOCX files into selectable, polished PDF documents directly in the browser.</p>
+          <span class="tool-link">Open Converter &rarr;</span>
+        </a>
+        <a class="tool-card" href="pdf-ocr-searchable_4.html">
+          <div class="tool-card-top"><div class="tool-icon tc-green">Aa</div><span class="tool-tag">OCR</span></div>
+          <h3>Make PDF Searchable</h3>
+          <p>Recognize scanned pages, add an invisible text layer, and export searchable PDFs and Markdown.</p>
+          <span class="tool-link">Open OCR Tool &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="logo logo-dark" href="index.html"><span>PDF<strong>Tools</strong></span></a>
+        <p>Browser-based PDF utilities. Your files stay on your device.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col"><span class="footer-col-title">Tools</span><a href="pdf-splitter.html">PDF Splitter</a><a href="pdf-merger.html">PDF Merger</a><a href="pdf-editor.html">PDF Editor</a><a href="pdf-to-doc.html">PDF to Word</a><a href="word-to-pdf.html">Word to PDF</a><a href="pdf-ocr-searchable_4.html">Searchable PDF</a></div>
+        <div class="footer-col"><span class="footer-col-title">More</span><a href="admin/">Admin</a><a href="#tools">Back to tools</a></div>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© 2026 PDF Tools. All processing happens in your browser.</p></div>
+  </footer>
+
+  <script>
+    window.addEventListener('scroll', () => {
+      document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+    });
+  </script>
+</body>
+</html>

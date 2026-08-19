@@ -1,0 +1,100 @@
+/* pdf-splitter.css — tool-specific styles only (shared.css loaded first) */
+
+/* Splitter uses a wider layout than the default 860px */
+.app { max-width: 1060px; }
+
+/* ── Split Groups ── */
+.group-grid { display: grid; gap: 10px; }
+
+.group-card {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  transition: border-color 0.15s;
+}
+.group-card.is-checked { background: #eff6ff; border-color: #bfdbfe; }
+.group-card input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; cursor: pointer; }
+
+.group-meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.group-title { font-size: 13px; font-weight: 700; }
+.group-sub   { font-size: 12px; color: var(--text-muted); }
+
+.name-row { display: flex; gap: 6px; align-items: center; }
+.name-row .input { flex: 1; min-width: 0; padding: 5px 9px; font-size: 12px; }
+
+.group-actions { display: flex; gap: 6px; }
+
+/* ── Page Grid ── */
+.page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.page-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.page-card.is-selected { border-color: var(--primary); }
+.page-card:hover { border-color: var(--primary); }
+
+.thumb-wrap {
+  position: relative;
+  background: var(--surface-alt);
+  display: flex; align-items: center; justify-content: center;
+  height: 130px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  overflow: hidden;
+}
+.thumb-wrap canvas { max-width: 100%; max-height: 112px; border-radius: 3px; display: block; }
+.thumb-overlay {
+  position: absolute; inset: 0;
+  background: rgba(79,70,229,0.55);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s;
+}
+.thumb-wrap:hover .thumb-overlay { opacity: 1; }
+.thumb-overlay svg { color: #fff; width: 26px; height: 26px; }
+
+.card-body { padding: 9px 10px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.page-label  { font-size: 12px; font-weight: 700; }
+.page-check  { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
+
+.page-name-input {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface-alt);
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.page-name-input:focus { border-color: var(--primary); background: #fff; }
+
+.card-footer { margin-top: 8px; }
+.card-footer .btn { width: 100%; justify-content: center; }
+
+/* ── Preview Modal footer extras ── */
+.zoom-row   { display: flex; align-items: center; gap: 8px; }
+.zoom-label { font-size: 13px; font-weight: 600; min-width: 46px; text-align: center; }
+.modal-hint { font-size: 12px; color: var(--text-muted); }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .page-grid    { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .group-card   { grid-template-columns: 20px 1fr; }
+  .group-actions { grid-column: 1 / -1; }
+  .modal-hint   { display: none; }
+}

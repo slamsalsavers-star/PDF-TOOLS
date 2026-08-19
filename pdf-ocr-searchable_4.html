@@ -1,0 +1,1067 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make PDFs searchable — OCR</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper:   #e7ebf2;
+    --slip:    #ffffff;
+    --ink:     #171b2e;
+    --muted:   #626b87;
+    --rule:    #c3cbdb;
+    --mimeo:   #4f34c4;
+    --mimeo-t: #ece7fd;
+    --ok:      #10684c;
+    --bad:     #a52218;
+    --bad-t:   #f7dedb;
+
+    --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 40px 20px 80px;
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 28px 28px; background-position: -1px -1px;
+    color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+  }
+  .wrap { max-width: 760px; margin: 0 auto; position: relative; }
+
+  .masthead {
+    border: 2px solid var(--ink); background: var(--slip);
+    padding: 22px 24px 20px; box-shadow: 6px 6px 0 rgba(23,27,46,.14);
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--mimeo); margin: 0 0 10px;
+  }
+  h1 { font-size: clamp(28px, 5.6vw, 42px); line-height: .98; letter-spacing: -.035em; font-weight: 700; margin: 0; }
+  h1 em { font-style: normal; color: var(--mimeo); }
+  .lede { margin: 12px 0 0; max-width: 48ch; color: var(--muted); }
+  .privacy {
+    margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--rule);
+    font-family: var(--mono); font-size: 12px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  }
+  .privacy b { color: var(--mimeo); font-weight: 600; }
+
+  .drop {
+    margin-top: 22px; border: 2px dashed var(--rule); background: rgba(255,255,255,.7);
+    padding: 34px 20px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover { border-color: var(--mimeo); background: var(--slip); }
+  .drop.over { border-color: var(--mimeo); background: var(--mimeo-t); }
+  .drop:focus-visible { outline: 3px solid var(--mimeo); outline-offset: 3px; }
+  .drop strong { display: block; font-size: 17px; }
+  .drop span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .settings {
+    margin-top: 18px; border: 2px solid var(--ink); background: var(--slip);
+    display: grid; grid-template-columns: repeat(4, 1fr);
+  }
+  .field { padding: 12px 14px; border-right: 1px solid var(--rule); }
+  .field:last-child { border-right: 0; }
+  .field label {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .field select {
+    width: 100%; border: 0; background: transparent; font-family: var(--sans);
+    font-size: 14px; font-weight: 500; color: var(--ink); padding: 2px 0; cursor: pointer;
+  }
+  .field select:focus-visible { outline: 2px solid var(--mimeo); outline-offset: 2px; }
+
+  .docket { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; }
+  .slip {
+    position: relative; background: var(--slip); border: 1px solid var(--rule); border-left: 0;
+    padding: 14px 16px 14px 26px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    animation: slipIn .22s ease-out;
+  }
+  .slip::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px;
+    background: radial-gradient(circle at 5px 5px, var(--paper) 2.5px, transparent 2.6px) 0 0/10px 10px;
+    border-right: 1px dashed var(--rule);
+  }
+  @keyframes slipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }
+
+  .slip .meta { flex: 1; min-width: 0; }
+  .slip .name { font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slip .sub { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .slip .sub.warn { color: var(--bad); }
+
+  .strip { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+  .strip i {
+    width: 13px; height: 17px; border: 1px solid var(--rule); background: var(--slip);
+    display: block; position: relative; overflow: hidden;
+  }
+  .strip i.scanning { border-color: var(--mimeo); }
+  .strip i.scanning::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 3px;
+    background: var(--mimeo); animation: sweep 1s linear infinite;
+  }
+  @keyframes sweep { from { top: -3px; } to { top: 17px; } }
+  .strip i.ocr  { background: var(--mimeo); border-color: var(--mimeo); }
+  .strip i.kept { background: var(--mimeo-t); border-color: var(--mimeo); }
+  .strip i.bad  { background: var(--bad-t); border-color: var(--bad); }
+
+  .stamp {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; padding: 4px 8px; border: 1.5px solid currentColor;
+    color: var(--muted); white-space: nowrap;
+  }
+  .stamp.working { color: var(--mimeo); }
+  .stamp.done { color: var(--ok); transform: rotate(-2.5deg); animation: stampIn .2s ease-out; }
+  .stamp.failed { color: var(--bad); transform: rotate(-2.5deg); }
+  @keyframes stampIn { from { transform: scale(1.35) rotate(-2.5deg); opacity: 0; } }
+
+  .btn {
+    font-family: var(--sans); font-size: 13.5px; font-weight: 600; padding: 8px 14px;
+    border: 1.5px solid var(--ink); background: var(--slip); color: var(--ink);
+    cursor: pointer; white-space: nowrap; transition: background .12s, color .12s;
+  }
+  .btn:hover { background: var(--ink); color: var(--slip); }
+  .btn:focus-visible { outline: 3px solid var(--mimeo); outline-offset: 2px; }
+  .btn.ghost { border-color: var(--rule); color: var(--muted); }
+  .btn.ghost:hover { background: var(--rule); color: var(--ink); }
+  .btn.primary { background: var(--mimeo); border-color: var(--mimeo); color: #fff; }
+  .btn.primary:hover { background: #3b249e; border-color: #3b249e; }
+  .btn.danger { border-color: var(--bad); color: var(--bad); }
+  .btn.danger:hover { background: var(--bad); color: #fff; }
+  .btn.small { font-size: 12px; padding: 6px 10px; }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; }
+  .btn[disabled]:hover { background: var(--slip); color: var(--ink); }
+  .btn.primary[disabled]:hover { background: var(--mimeo); color: #fff; }
+
+  .actions { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .actions .count { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .note { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); }
+  .note b { color: var(--ink); font-weight: 600; }
+  .legend { font-family: var(--mono); font-size: 11px; display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend b { width: 11px; height: 11px; display: inline-block; border: 1px solid var(--mimeo); }
+  .legend b.a { background: var(--mimeo); }
+  .legend b.c { background: var(--mimeo-t); }
+  .legend b.d { background: var(--bad-t); border-color: var(--bad); }
+
+  @media (max-width: 620px) {
+    .settings { grid-template-columns: 1fr 1fr; }
+    .field:nth-child(2), .field:nth-child(4) { border-right: 0; }
+    .field:nth-child(3), .field:nth-child(4) { border-top: 1px solid var(--rule); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/pdf-ocr.css">
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="masthead-top">
+      <div>
+        <p class="eyebrow">Optical character recognition</p>
+        <h1>Make a scan <em>searchable</em></h1>
+      </div>
+      <a href="index.html" class="back-link">← Back to Hub</a>
+    </div>
+    <p class="lede">Reads the words off scanned pages and layers them invisibly back onto the page, so the PDF looks identical but you can select, copy and search the text. Also exports clean Markdown for feeding to an AI.</p>
+    <div class="privacy"><b>Local only.</b> <span>Recognition runs in this browser — no page is uploaded anywhere.</span></div>
+  </div>
+
+  <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose PDF files to make searchable">
+    <strong>Drop scanned PDFs here</strong>
+    <span>or click to browse — multiple files welcome</span>
+  </div>
+  <input type="file" id="picker" accept=".pdf,application/pdf" multiple hidden>
+
+  <div class="settings">
+    <div class="field">
+      <label for="lang">Document language</label>
+      <select id="lang">
+        <option value="eng">English</option>
+        <option value="fra">French</option>
+        <option value="deu">German</option>
+        <option value="spa">Spanish</option>
+        <option value="por">Portuguese</option>
+        <option value="ita">Italian</option>
+        <option value="nld">Dutch</option>
+        <option value="eng+fra">English + French</option>
+        <option value="eng+spa">English + Spanish</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="quality">Page images</label>
+      <select id="quality">
+        <option value="110">Smaller file</option>
+        <option value="150" selected>Balanced</option>
+        <option value="200">Sharpest</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="skip">Pages that already have text</label>
+      <select id="skip">
+        <option value="yes" selected>Keep their text</option>
+        <option value="no">Re-read everything</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="md">Markdown output</label>
+      <select id="md">
+        <option value="rich" selected>Structured + front matter</option>
+        <option value="bare">Structured only</option>
+        <option value="plain">Plain lines</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="docket" id="docket"></div>
+
+  <div class="actions" id="actions" hidden>
+    <button class="btn primary" id="runAll">Make searchable</button>
+    <button class="btn danger" id="stop" hidden>Stop</button>
+    <button class="btn ghost" id="clearAll">Clear list</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="note">
+    <p><b>How to read the page strip:</b> each square is one page of the file.</p>
+    <div class="legend">
+      <span><b class="a"></b> read by OCR</span>
+      <span><b class="c"></b> already had text, kept as-is</span>
+      <span><b class="d"></b> couldn't be read, kept as an image</span>
+      <span><b></b> not processed yet</span>
+    </div>
+    <p style="margin-top:14px"><b>Markdown export:</b> alongside the searchable PDF you get a <b>.md</b> file with one section per page, headings, lists and tables recovered from the layout, and YAML front matter recording the source, page count and recognition confidence — the shape a language model reads best. Columns that aren't a solid grid are kept as aligned text rather than forced into a table, since a wrong header misleads more than plain lines do.</p>
+    <p style="margin-top:14px"><b>Worth knowing:</b> the first run downloads the recognition model for your chosen language (a few MB), so it takes a moment before the first page starts. Budget roughly 2–5 seconds per page. Long documents are built in batches to keep memory low, and are automatically read at a lower resolution — you can stop a run at any time and keep what's been done so far. Accuracy depends heavily on scan quality. Latin-alphabet languages only.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), picker = $("picker"), docket = $("docket"), actions = $("actions");
+
+  const MIN_CHARS_FOR_TEXT = 40;   // per page, to call it "already has text"
+  const CHUNK_PAGES = 20;          // pages per intermediate PDF, keeps memory flat
+  const CONF_FLOOR = 30;           // ignore words the recogniser isn't sure about
+
+  let items = [], nextId = 1;
+  let worker = null, workerLang = null, workerProgress = null;
+  let busy = false, cancelled = false;
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  /* ---------------- intake ---------------- */
+
+  drop.addEventListener("click", () => picker.click());
+  drop.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); picker.click(); }
+  });
+  picker.addEventListener("change", () => { addFiles(picker.files); picker.value = ""; });
+
+  ["dragenter", "dragover"].forEach(ev =>
+    drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev =>
+    drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+
+  function addFiles(list) {
+    for (const file of list) {
+      if (!/\.pdf$/i.test(file.name)) continue;
+      items.push(renderSlip({ id: nextId++, file, state: "queued", msg: "", blob: null, text: "", md: "", el: null }));
+    }
+    refreshChrome();
+  }
+
+  /* ---------------- docket ---------------- */
+
+  const STAMPS = {
+    queued:  ["Queued", ""],
+    working: ["Reading", "working"],
+    done:    ["Searchable", "done"],
+    partial: ["Partial", "done"],
+    failed:  ["Failed", "failed"]
+  };
+
+  function renderSlip(item) {
+    const el = document.createElement("div");
+    el.className = "slip";
+    el.innerHTML =
+      '<div class="meta"><div class="name"></div><div class="sub"></div></div>' +
+      '<div class="stamp"></div>' +
+      '<button class="btn save" hidden>Save PDF</button>' +
+      '<button class="btn small md" hidden>Save Markdown</button>' +
+      '<button class="btn ghost small text" hidden>Save text</button>' +
+      '<div class="strip"></div>';
+    const stem = item.file.name.replace(/\.pdf$/i, "");
+    el.querySelector(".name").textContent = item.file.name;
+    el.querySelector(".save").addEventListener("click", () =>
+      download(item.blob, stem + " (searchable).pdf"));
+    el.querySelector(".md").addEventListener("click", () =>
+      download(new Blob([item.md], { type: "text/markdown;charset=utf-8" }), stem + ".md"));
+    el.querySelector(".text").addEventListener("click", () =>
+      download(new Blob([item.text], { type: "text/plain;charset=utf-8" }), stem + ".txt"));
+    item.el = el;
+    docket.appendChild(el);
+    paint(item);
+    return item;
+  }
+
+  function paint(item) {
+    const [label, cls] = STAMPS[item.state] || STAMPS.queued;
+    const stamp = item.el.querySelector(".stamp");
+    stamp.textContent = label; stamp.className = "stamp " + cls;
+
+    const sub = item.el.querySelector(".sub");
+    sub.classList.toggle("warn", item.state === "failed");
+    sub.textContent = item.msg || (item.blob ? kb(item.blob.size) : kb(item.file.size));
+
+    const finished = item.state === "done" || item.state === "partial";
+    item.el.querySelector(".save").hidden = !finished || !item.blob;
+    item.el.querySelector(".md").hidden   = !finished || !item.md.trim();
+    item.el.querySelector(".text").hidden = !finished || !item.text.trim();
+  }
+
+  function buildStrip(item, pageCount) {
+    const strip = item.el.querySelector(".strip");
+    strip.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < pageCount; i++) frag.appendChild(document.createElement("i"));
+    strip.appendChild(frag);
+  }
+  function markPage(item, index, cls) {
+    const cell = item.el.querySelector(".strip").children[index];
+    if (cell) cell.className = cls;
+  }
+
+  const kb = (b) => b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1) + " MB";
+
+  function clock(seconds) {
+    if (!isFinite(seconds) || seconds < 0) return "";
+    const m = Math.floor(seconds / 60), s = Math.round(seconds % 60);
+    return m ? m + "m " + s + "s" : s + "s";
+  }
+
+  function refreshChrome() {
+    actions.hidden = items.length === 0;
+    const done = items.filter(i => i.state === "done" || i.state === "partial").length;
+    const pending = items.filter(i => i.state === "queued").length;
+    $("count").textContent = items.length ? done + " of " + items.length + " done" : "";
+    $("runAll").disabled = pending === 0 || busy;
+    $("runAll").textContent = pending > 1 ? "Make " + pending + " files searchable" : "Make searchable";
+    $("stop").hidden = !busy;
+    $("clearAll").disabled = busy;
+  }
+
+  /* ---------------- run ---------------- */
+
+  $("stop").addEventListener("click", () => {
+    cancelled = true;
+    $("stop").textContent = "Stopping…";
+    $("stop").disabled = true;
+  });
+
+  $("clearAll").addEventListener("click", () => {
+    if (busy) return;
+    items = []; docket.innerHTML = ""; refreshChrome();
+  });
+
+  $("runAll").addEventListener("click", async () => {
+    busy = true; cancelled = false;
+    $("stop").textContent = "Stop"; $("stop").disabled = false;
+    refreshChrome();
+
+    const settings = {
+      lang: $("lang").value,
+      dpi: parseInt($("quality").value, 10),
+      reuseText: $("skip").value === "yes",
+      md: $("md").value
+    };
+
+    for (const item of items) {
+      if (item.state !== "queued") continue;
+      if (cancelled) break;
+      item.state = "working"; item.msg = "Opening the file…"; paint(item);
+      try {
+        const out = await processFile(item, settings);
+        item.blob = out.blob;
+        item.text = out.text;
+        item.md = out.markdown;
+        item.state = out.complete ? "done" : "partial";
+        item.msg = out.summary;
+      } catch (err) {
+        item.state = "failed";
+        item.msg = describe(err);
+        console.error("[OCR] " + item.file.name, err);
+      }
+      paint(item); refreshChrome();
+    }
+
+    if (worker) { try { await worker.terminate(); } catch (e) {} worker = null; workerLang = null; }
+    busy = false; cancelled = false;
+    refreshChrome();
+  });
+
+  function describe(err) {
+    const raw = err && err.message ? err.message : String(err || "Unknown error");
+    if (/password|encrypt/i.test(raw)) return "This PDF is password protected";
+    if (/Invalid PDF|structure/i.test(raw)) return "This file isn't a readable PDF";
+    if (/memory|allocat|Array buffer allocation/i.test(raw)) return "Ran out of memory — try 'Smaller file' page images";
+    if (/network|fetch|load.*lang|Failed to load/i.test(raw)) return "Couldn't download the language model — check your connection";
+    return raw.slice(0, 120);
+  }
+
+  function download(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  /* ---------------- recogniser ---------------- */
+
+  // tesseract.js changed createWorker's signature at v5:
+  //   v4 and earlier — createWorker(options), then loadLanguage() + initialize()
+  //   v5 and later   — createWorker(langs, oem, options), pre-initialised
+  // The trap: calling the v5 form on a v4 build does NOT throw. The language
+  // string gets spread as if it were an options object, you get back a worker
+  // with no traineddata loaded, and it only dies later inside recognize() with
+  // "Cannot read properties of null (reading 'SetImage')" — one silent failure
+  // per page. So pick the boot sequence from the build that's actually loaded.
+  function tesseractMajor() {
+    const tag = document.querySelector('script[src*="tesseract.js/"]');
+    const m = tag && String(tag.src).match(/tesseract\.js\/(\d+)\./);
+    return m ? parseInt(m[1], 10) : 4;
+  }
+
+  async function getWorker(lang) {
+    if (worker && workerLang === lang) return worker;
+    if (worker) { try { await worker.terminate(); } catch (e) {} worker = null; workerLang = null; }
+
+    const logger = (m) => { if (workerProgress) workerProgress(m); };
+    const errorHandler = (e) => { console.error("[OCR] recogniser", e); };
+
+    let wk;
+    if (tesseractMajor() >= 5) {
+      wk = await Tesseract.createWorker(lang, 1, { logger, errorHandler });
+    } else {
+      wk = await Tesseract.createWorker({ logger, errorHandler });
+      if (typeof wk.loadLanguage === "function") await wk.loadLanguage(lang);
+      if (typeof wk.initialize === "function") await wk.initialize(lang);
+    }
+
+    worker = wk;
+    workerLang = lang;
+    return worker;
+  }
+
+  /* ---------------- per file ---------------- */
+
+  async function processFile(item, settings) {
+    if (!window.pdfjsLib || !window.jspdf || !window.Tesseract)
+      throw new Error("Libraries didn't load — check your connection and reload the page");
+
+    const bytes = new Uint8Array(await item.file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data: bytes, isEvalSupported: false }).promise;
+    const total = pdf.numPages;
+    buildStrip(item, total);
+
+    // long documents get read at a lower resolution so the tab stays alive
+    const ocrDpi  = total > 150 ? 130 : total > 60 ? 150 : 200;
+    const maxEdge = total > 150 ? 2200 : total > 60 ? 2600 : 3200;
+    const canMerge = !!(window.PDFLib && window.PDFLib.PDFDocument);
+    const chunkSize = canMerge ? CHUNK_PAGES : Infinity;
+
+    const { jsPDF } = window.jspdf;
+    const chunks = [];
+    let doc = null, inChunk = 0;
+    let ocrCount = 0, keptCount = 0, lastPage = 0, firstError = null;
+    const failures = [], allText = [], pages = [];
+    const started = Date.now();
+
+    const closeChunk = async () => {
+      if (!doc) return;
+      chunks.push(await doc.output("blob").arrayBuffer());
+      doc = null; inChunk = 0;
+      await sleep(30);                     // give the collector a breath
+    };
+
+    for (let p = 1; p <= total; p++) {
+      if (cancelled) break;
+      let page = null, canvas = null;
+
+      try {
+        page = await pdf.getPage(p);
+        const base = page.getViewport({ scale: 1 });
+        const wPt = base.width, hPt = base.height;
+
+        if (!doc) doc = new jsPDF({ unit: "pt", format: [wPt, hPt], compress: true });
+        else doc.addPage([wPt, hPt]);
+        inChunk++;
+
+        // reuse a real text layer rather than destroying it
+        let existing = null;
+        if (settings.reuseText) {
+          try {
+            const tc = await page.getTextContent();
+            const chars = tc.items.reduce((n, it) => n + (it.str ? it.str.length : 0), 0);
+            if (chars >= MIN_CHARS_FOR_TEXT) existing = tc;
+          } catch (e) { /* no text layer, carry on */ }
+        }
+
+        markPage(item, p - 1, existing ? "kept" : "scanning");
+        status(item, p, total, started, existing ? "already has text" : "reading…");
+
+        canvas = await rasterise(page, ocrDpi, maxEdge);
+        doc.addImage(shrink(canvas, wPt, settings.dpi), "JPEG", 0, 0, wPt, hPt);
+
+        if (existing) {
+          keptCount++;
+          allText.push(layExistingText(doc, existing, base));
+          pages.push(textPage(p, existing, base, wPt, hPt));
+          markPage(item, p - 1, "kept");
+        } else {
+          const wk = await getWorker(settings.lang);
+          workerProgress = (m) => {
+            if (!m) return;
+            if (m.status === "recognizing text")
+              status(item, p, total, started, "reading " + Math.round((m.progress || 0) * 100) + "%");
+            else if (/load|initial/i.test(m.status || ""))
+              status(item, p, total, started, "loading language model…");
+          };
+          const result = await wk.recognize(canvas);
+          workerProgress = null;
+          layOcrText(doc, collectWords(result.data), wPt / canvas.width);
+          allText.push((result.data && result.data.text) || "");
+          pages.push(ocrPage(p, result.data, wPt / canvas.width, wPt, hPt));
+          ocrCount++;
+          markPage(item, p - 1, "ocr");
+        }
+
+        lastPage = p;
+      } catch (pageErr) {
+        // one bad page must not sink the whole document
+        console.error("[OCR] page " + p + " of " + item.file.name, pageErr);
+        if (!firstError) firstError = pageErr;
+        failures.push(p);
+        pages.push({ index: p, source: "failed", confidence: null, lines: [], width: 612, height: 792 });
+        markPage(item, p - 1, "bad");
+        lastPage = p;
+        workerProgress = null;
+        if (/memory|allocat/i.test(String(pageErr && pageErr.message))) await sleep(300);
+      } finally {
+        if (canvas) { canvas.width = canvas.height = 0; }
+        if (page) { try { page.cleanup(); } catch (e) {} }
+      }
+
+      if (inChunk >= chunkSize) await closeChunk();
+    }
+
+    await closeChunk();
+    try { await pdf.destroy(); } catch (e) {}
+
+    // every single page blew up — that's a broken run, not a partial one, and
+    // the underlying reason is far more useful than "15 pages skipped"
+    if (!ocrCount && !keptCount && firstError) throw firstError;
+    if (!chunks.length) throw new Error("No pages could be processed");
+
+    const blob = await mergeChunks(chunks);
+    chunks.length = 0;
+
+    const parts = [];
+    if (ocrCount)  parts.push(ocrCount + (ocrCount === 1 ? " page read" : " pages read"));
+    if (keptCount) parts.push(keptCount + " already had text");
+    if (failures.length) parts.push(failures.length + " page" + (failures.length === 1 ? "" : "s") + " skipped (" + failures.slice(0, 6).join(", ") + (failures.length > 6 ? "…" : "") + ")");
+    if (cancelled && lastPage < total) parts.push("stopped at page " + lastPage + " of " + total);
+
+    const scored = pages.filter(pg => pg.confidence != null);
+    const meta = {
+      file: item.file.name,
+      title: item.file.name.replace(/\.pdf$/i, ""),
+      total,
+      lang: settings.lang,
+      mode: settings.md,
+      method: ocrCount && keptCount ? "mixed" : keptCount ? "text-layer" : "ocr",
+      confidence: scored.length ? scored.reduce((n, pg) => n + pg.confidence, 0) / scored.length : null,
+      failed: failures.slice()
+    };
+
+    return {
+      blob,
+      text: allText.join("\n\n"),
+      markdown: buildMarkdown(pages, meta),
+      complete: !failures.length && !(cancelled && lastPage < total),
+      summary: (parts.join(" · ") || "Nothing to read") + " · " + kb(blob.size)
+    };
+  }
+
+  function status(item, page, total, started, what) {
+    const elapsed = (Date.now() - started) / 1000;
+    const eta = page > 1 ? clock(elapsed / (page - 1) * (total - page + 1)) : "";
+    item.msg = "Page " + page + " of " + total + " — " + what + (eta ? " · about " + eta + " left" : "");
+    paint(item);
+  }
+
+  /* ---------------- page plumbing ---------------- */
+
+  async function rasterise(page, dpi, maxEdge) {
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(dpi / 72, maxEdge / Math.max(base.width, base.height));
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(vp.width);
+    canvas.height = Math.ceil(vp.height);
+    if (!canvas.width || !canvas.height) throw new Error("Page has no drawable area");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) throw new Error("Browser refused a drawing surface for this page");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    return canvas;
+  }
+
+  function shrink(canvas, widthPt, dpi) {
+    const quality = dpi >= 200 ? 0.85 : dpi >= 150 ? 0.75 : 0.62;
+    const targetW = Math.round(widthPt * dpi / 72);
+    let url;
+    if (targetW >= canvas.width) {
+      url = canvas.toDataURL("image/jpeg", quality);
+    } else {
+      const out = document.createElement("canvas");
+      out.width = targetW;
+      out.height = Math.max(1, Math.round(canvas.height * targetW / canvas.width));
+      const ctx = out.getContext("2d", { alpha: false });
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(canvas, 0, 0, out.width, out.height);
+      url = out.toDataURL("image/jpeg", quality);
+      out.width = out.height = 0;
+    }
+    if (!url || url.length < 100) throw new Error("Couldn't turn this page into an image");
+    return url;
+  }
+
+  async function mergeChunks(buffers) {
+    if (buffers.length === 1) return new Blob([buffers[0]], { type: "application/pdf" });
+    const { PDFDocument } = window.PDFLib;
+    const out = await PDFDocument.create();
+    for (const buf of buffers) {
+      const src = await PDFDocument.load(buf, { ignoreEncryption: true });
+      const copied = await out.copyPages(src, src.getPageIndices());
+      copied.forEach(pg => out.addPage(pg));
+    }
+    return new Blob([await out.save({ useObjectStreams: true })], { type: "application/pdf" });
+  }
+
+  /* ---------------- markdown ---------------- */
+
+  // Both extractors below normalise to the same shape — lines in page points,
+  // y measured downward — so one renderer serves OCR'd pages and pages that
+  // already carried a real text layer.
+
+  // Scanners turn ruled lines into runs of underscores or dashes; they read as
+  // words, wreck column detection, and mean nothing to a reader.
+  const RULE = /^[_\-\u2013\u2014.\u00b7|]{2,}$/;
+
+  function collectLines(data) {
+    if (!data) return [];
+    if (data.lines && data.lines.length) return data.lines;
+    const out = [];
+    const walk = (nodes) => {
+      (nodes || []).forEach((n) => {
+        if (n.lines && n.lines.length) out.push.apply(out, n.lines);
+        else { walk(n.paragraphs); walk(n.blocks); }
+      });
+    };
+    walk(data.blocks); walk(data.paragraphs);
+    return out;
+  }
+
+  function ocrPage(index, data, f, wPt, hPt) {
+    const lines = [];
+    for (const ln of collectLines(data)) {
+      const b = ln.bbox;
+      if (!b) continue;
+      const words = (ln.words || [])
+        .filter(w => w.text && w.text.trim() && w.bbox && !RULE.test(w.text.trim()))
+        .map(w => ({ text: w.text.trim(), x0: w.bbox.x0 * f, x1: w.bbox.x1 * f }));
+      const text = (words.length ? words.map(w => w.text).join(" ") : (ln.text || ""))
+        .replace(/\s+/g, " ").trim();
+      if (!text) continue;
+      lines.push({
+        text, words,
+        x0: b.x0 * f, x1: b.x1 * f,
+        top: b.y0 * f, bottom: b.y1 * f, height: (b.y1 - b.y0) * f
+      });
+    }
+    return {
+      index, source: "ocr", lines, width: wPt, height: hPt,
+      confidence: data && data.confidence != null ? data.confidence : null
+    };
+  }
+
+  function textPage(index, textContent, viewport, wPt, hPt) {
+    const units = [];
+    for (const it of (textContent.items || [])) {
+      if (!it.str || !it.str.trim() || !it.transform) continue;
+      if (RULE.test(it.str.trim())) continue;
+      const t = pdfjsLib.Util.transform(viewport.transform, it.transform);
+      const size = Math.hypot(t[2], t[3]) || 10;
+      units.push({
+        text: it.str.trim(), size,
+        x0: t[4], x1: t[4] + (it.width || it.str.length * size * 0.5),
+        baseline: t[5]
+      });
+    }
+    units.sort((a, b) => (a.baseline - b.baseline) || (a.x0 - b.x0));
+
+    const grouped = [];
+    let cur = null;
+    for (const u of units) {
+      if (cur && Math.abs(u.baseline - cur.baseline) <= Math.max(2, cur.size * 0.5)) {
+        cur.words.push(u);
+        cur.x1 = Math.max(cur.x1, u.x1);
+        cur.size = Math.max(cur.size, u.size);
+      } else {
+        if (cur) grouped.push(cur);
+        cur = { baseline: u.baseline, size: u.size, x0: u.x0, x1: u.x1, words: [u] };
+      }
+    }
+    if (cur) grouped.push(cur);
+
+    const lines = grouped.map((l) => {
+      l.words.sort((a, b) => a.x0 - b.x0);
+      return {
+        text: l.words.map(w => w.text).join(" ").replace(/\s+/g, " ").trim(),
+        words: l.words.map(w => ({ text: w.text, x0: w.x0, x1: w.x1 })),
+        x0: l.x0, x1: l.x1,
+        top: l.baseline - l.size, bottom: l.baseline, height: l.size
+      };
+    }).filter(l => l.text);
+
+    return { index, source: "text", lines, width: wPt, height: hPt, confidence: null };
+  }
+
+  // A run of blank space wide enough to be a column break rather than a word space.
+  function splitCells(line, minGap) {
+    const ws = line.words || [];
+    if (ws.length < 2) return null;
+    const groups = [];
+    let cur = [ws[0]], split = false;
+    for (let i = 1; i < ws.length; i++) {
+      if (ws[i].x0 - ws[i - 1].x1 >= minGap) { groups.push(cur); cur = [ws[i]]; split = true; }
+      else cur.push(ws[i]);
+    }
+    groups.push(cur);
+    if (!split) return null;
+    return groups.map(g => ({
+      text: g.map(w => w.text).join(" ").trim(),
+      x0: g[0].x0, x1: g[g.length - 1].x1
+    }));
+  }
+
+  // Snap every cell in a run of rows onto shared column positions, so a header
+  // that OCR split differently still lands above the right data column.
+  function columnise(group, tol) {
+    const marks = [];
+    group.forEach(g => g.cells.forEach(c => marks.push(c.x0)));
+    marks.sort((a, b) => a - b);
+
+    const seeds = [];
+    for (const m of marks) {
+      const last = seeds[seeds.length - 1];
+      if (last && m - last.at <= tol) { last.sum += m; last.n++; last.at = m; }
+      else seeds.push({ sum: m, n: 1, at: m });
+    }
+
+    const assign = (cols, leftOnly) => group.map((g) => {
+      const cells = cols.map(() => ""), spans = cols.map(() => null);
+      g.cells.forEach((c) => {
+        let best = 0, bd = Infinity;
+        cols.forEach((col, i) => {
+          const d = leftOnly ? Math.abs(col.x0 - c.x0)
+                             : Math.min(Math.abs(col.x0 - c.x0), Math.abs(col.x1 - c.x1));
+          if (d < bd) { bd = d; best = i; }
+        });
+        cells[best] = cells[best] ? cells[best] + " " + c.text : c.text;
+        const s = spans[best];
+        spans[best] = s ? { x0: Math.min(s.x0, c.x0), x1: Math.max(s.x1, c.x1) }
+                        : { x0: c.x0, x1: c.x1 };
+      });
+      return { cells, spans, line: g.line, filled: cells.filter(Boolean).length };
+    });
+
+    const learn = (rows, cols) => cols.map((col, i) => {
+      const ss = rows.map(r => r.spans[i]).filter(Boolean);
+      if (!ss.length) return col;
+      return {
+        x0: ss.reduce((n, s) => n + s.x0, 0) / ss.length,
+        x1: ss.reduce((n, s) => n + s.x1, 0) / ss.length
+      };
+    });
+
+    let cols = seeds.map(s => ({ x0: s.sum / s.n, x1: s.sum / s.n }));
+    let rows = assign(cols, true);
+    // learn each column's real span, then re-match on whichever edge lines up:
+    // right-aligned number columns share an x1, never an x0
+    cols = learn(rows, cols);
+    rows = assign(cols, false);
+
+    // a column only one row agrees on is an indent or a stray, not a column —
+    // drop it and let its text fall into the nearest surviving column
+    const fill = cols.map((_, i) => rows.filter(r => r.cells[i]).length);
+    const floor = Math.max(2, rows.length * 0.4);
+    const pruned = cols.filter((_, i) => fill[i] >= floor);
+    if (pruned.length >= 2 && pruned.length < cols.length) { cols = pruned; rows = assign(cols, false); }
+
+    return { centres: cols, rows };
+  }
+
+  // Lines that recur in the same edge band across most pages are furniture.
+  function repeatedEdges(pages) {
+    const norm = (s) => s.replace(/\d+/g, "#").replace(/\s+/g, " ").trim().toLowerCase();
+    const top = {}, bottom = {};
+    let counted = 0;
+    const bump = (bag, text) => {
+      const k = norm(text);
+      if (!k) return;
+      if (!bag[k]) bag[k] = { n: 0, sample: text };
+      bag[k].n++;
+    };
+    for (const pg of pages) {
+      if (!pg.lines.length) continue;
+      counted++;
+      const first = pg.lines[0], last = pg.lines[pg.lines.length - 1];
+      if (first.top <= pg.height * 0.10) bump(top, first.text);
+      if (last.bottom >= pg.height * 0.90) bump(bottom, last.text);
+    }
+    const floor = Math.max(3, counted * 0.6);
+    const pick = (bag) => {
+      const keys = counted >= 4 ? Object.keys(bag).filter(k => bag[k].n >= floor) : [];
+      return { set: new Set(keys), text: keys.map(k => bag[k].sample) };
+    };
+    const t = pick(top), b = pick(bottom);
+    // hoisted, not discarded — a running header is often the only place the
+    // issuing company is named, and repeating it 15 times helps nobody
+    return { top: t.set, bottom: b.set, hoisted: t.text.concat(b.text), norm };
+  }
+
+  function emitTable(group, medH, tol) {
+    const plain = () => group.map(g => g.cells.map(c => c.text).join("   "));
+    const { centres, rows } = columnise(group, tol);
+
+    // a header split over two lines — "Requested" above "ship date" — folds down
+    if (rows.length > 2 && rows[0].filled < centres.length / 2 &&
+        rows[1].line.top - rows[0].line.bottom < medH * 1.6) {
+      rows[1].cells = rows[1].cells.map((c, i) => [rows[0].cells[i], c].filter(Boolean).join(" "));
+      rows.shift();
+    }
+
+    // Real tables fill their grid; forms and side-by-side layouts leave it
+    // sparse. Inventing a header row for those misleads more than plain text.
+    const density = rows.reduce((n, r) => n + r.filled, 0) / (rows.length * centres.length);
+    if (centres.length < 3 || rows.length < 3 || density < 0.85) return plain();
+
+    const esc = (c) => c.replace(/\|/g, "\\|").trim();
+    const out = ["| " + rows[0].cells.map(esc).join(" | ") + " |",
+                 "|" + centres.map(() => " --- ").join("|") + "|"];
+    for (let i = 1; i < rows.length; i++) out.push("| " + rows[i].cells.map(esc).join(" | ") + " |");
+    return out;
+  }
+
+  // Rejoin lines that are one wrapped sentence; leave deliberate breaks alone.
+  function flowParagraph(texts) {
+    let out = "";
+    texts.forEach((t, i) => {
+      if (!i) { out = t; return; }
+      if (/[A-Za-z]-$/.test(out) && /^[a-z]/.test(t)) out = out.slice(0, -1) + t;
+      else if (/[a-z,;]$/.test(out) && /^[a-z(]/.test(t)) out += " " + t;
+      else out += "\n" + t;
+    });
+    return out;
+  }
+
+  const BULLET = /^([-–—•*▪‣o]|\(?\d{1,2}[.)])\s+/;
+
+  function pageBlocks(pg, drop) {
+    const last = pg.lines.length - 1;
+    const lines = pg.lines.filter((l, i) => {
+      if (i === 0 && drop.top.has(drop.norm(l.text))) return false;
+      if (i === last && drop.bottom.has(drop.norm(l.text))) return false;
+      return true;
+    });
+    if (!lines.length) return [];
+
+    const heights = lines.map(l => l.height).sort((a, b) => a - b);
+    const medH = heights[heights.length >> 1] || 10;
+    let chars = 0, span = 0;
+    lines.forEach(l => l.words.forEach((w) => { chars += w.text.length; span += w.x1 - w.x0; }));
+    const charW = chars ? span / chars : medH * 0.5;
+    const minGap = Math.max(charW * 3, pg.width * 0.018);
+
+    const rows = lines.map((l) => {
+      const cells = splitCells(l, minGap);
+      return {
+        line: l, cells,
+        isHeading: !cells && l.height >= medH * 1.35 && l.text.length <= 90,
+        isList: !cells && BULLET.test(l.text)
+      };
+    });
+
+    const blocks = [];
+    let i = 0;
+    while (i < rows.length) {
+      if (rows[i].cells) {
+        const group = [];
+        while (i < rows.length && rows[i].cells) group.push(rows[i++]);
+        blocks.push(emitTable(group, medH, minGap * 0.6).join("\n"));
+      } else if (rows[i].isHeading) {
+        blocks.push((rows[i].line.height >= medH * 1.9 ? "### " : "#### ") + rows[i].line.text);
+        i++;
+      } else if (rows[i].isList) {
+        const bullets = [];
+        while (i < rows.length && rows[i].isList)
+          bullets.push("- " + rows[i++].line.text.replace(BULLET, ""));
+        blocks.push(bullets.join("\n"));
+      } else {
+        const para = [];
+        while (i < rows.length && !rows[i].cells && !rows[i].isHeading && !rows[i].isList) {
+          if (para.length && rows[i].line.top - rows[i - 1].line.bottom > medH * 1.1) break;
+          para.push(rows[i++].line.text);
+        }
+        blocks.push(flowParagraph(para));
+      }
+    }
+    return blocks.filter(b => b && b.trim());
+  }
+
+  function frontMatter(meta) {
+    const esc = (s) => '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+    const rows = [
+      "source_file: " + esc(meta.file),
+      "pages: " + meta.total,
+      "extracted: " + new Date().toISOString().slice(0, 10),
+      "extraction: " + esc(meta.method)
+    ];
+    if (meta.method !== "text-layer") rows.push("ocr_language: " + esc(meta.lang));
+    if (meta.confidence != null) rows.push("ocr_confidence: " + Math.round(meta.confidence));
+    if (meta.failed && meta.failed.length) rows.push("unreadable_pages: [" + meta.failed.join(", ") + "]");
+    rows.push("note: " + esc(
+      "Text recovered from a scanned document. Layout is approximate and character " +
+      "errors are possible — verify names, figures and dates against the original."
+    ));
+    return "---\n" + rows.join("\n") + "\n---";
+  }
+
+  function buildMarkdown(pages, meta) {
+    const plain = meta.mode === "plain";
+    const parts = [];
+    if (meta.mode === "rich") parts.push(frontMatter(meta));
+    parts.push("# " + meta.title);
+
+    const drop = plain
+      ? { top: new Set(), bottom: new Set(), hoisted: [], norm: (s) => s }
+      : repeatedEdges(pages);
+    if (drop.hoisted.length)
+      parts.push("_Repeated on every page: " + drop.hoisted.join(" · ") + "_");
+
+    for (const pg of pages) {
+      parts.push("## Page " + pg.index);
+      if (pg.source === "failed") { parts.push("_This page could not be read._"); continue; }
+      if (meta.mode === "rich" && pg.confidence != null && pg.confidence < 75)
+        parts.push("> Low recognition confidence (" + Math.round(pg.confidence) +
+                   "%) — treat this page as unreliable.");
+      const body = plain
+        ? pg.lines.map(l => l.text).join("\n")
+        : pageBlocks(pg, drop).join("\n\n");
+      parts.push(body.trim() || "_No text found on this page._");
+    }
+    return parts.join("\n\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
+  }
+
+  /* ---------------- text layers ---------------- */
+
+  function collectWords(data) {
+    if (!data) return [];
+    if (data.words && data.words.length) return data.words;
+    const out = [];
+    const walk = (nodes) => {
+      (nodes || []).forEach((n) => {
+        if (n.words && n.words.length) out.push.apply(out, n.words);
+        walk(n.paragraphs); walk(n.lines); walk(n.blocks);
+      });
+    };
+    walk(data.blocks); walk(data.paragraphs); walk(data.lines);
+    return out;
+  }
+
+  function layOcrText(doc, words, f) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 255, 255);
+    for (const w of words) {
+      const text = (w.text || "").trim();
+      if (!text) continue;
+      if (w.confidence != null && w.confidence < CONF_FLOOR) continue;
+      const b = w.bbox; if (!b) continue;
+
+      const x = b.x0 * f, boxW = (b.x1 - b.x0) * f, boxH = (b.y1 - b.y0) * f;
+      if (boxW <= 0 || boxH <= 0) continue;
+
+      doc.setFontSize(10);
+      const natural = doc.getTextWidth(text) / 10;
+      let size = natural > 0 ? boxW / natural : boxH;
+      size = Math.max(boxH * 0.4, Math.min(size, boxH * 1.6));
+      doc.setFontSize(size);
+      doc.text(text, x, b.y1 * f - boxH * 0.12, { renderingMode: "invisible" });
+    }
+    doc.setTextColor(0, 0, 0);
+  }
+
+  function layExistingText(doc, textContent, viewport) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(255, 255, 255);
+    const chunks = [];
+    for (const item of textContent.items) {
+      const str = item.str;
+      if (!str || !str.trim() || !item.transform) continue;
+      chunks.push(str);
+      const t = pdfjsLib.Util.transform(viewport.transform, item.transform);
+      const size = Math.hypot(t[2], t[3]) || 10;
+      doc.setFontSize(10);
+      const natural = doc.getTextWidth(str) / 10;
+      const width = item.width || natural * size;
+      let fs = natural > 0 ? width / natural : size;
+      fs = Math.max(size * 0.4, Math.min(fs, size * 1.8));
+      doc.setFontSize(fs);
+      doc.text(str, t[4], t[5], { renderingMode: "invisible" });
+    }
+    doc.setTextColor(0, 0, 0);
+    return chunks.join(" ");
+  }
+})();
+</script>
