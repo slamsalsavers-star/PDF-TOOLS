@@ -26,6 +26,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    document.querySelectorAll('.mode-btn').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
     conversionMode = btn.dataset.mode;
     modeHint.textContent = MODE_HINTS[conversionMode];
   });

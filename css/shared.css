@@ -32,7 +32,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -43,6 +43,41 @@ body {
 
 /* ── Layout ── */
 .app { max-width: 860px; margin: 0 auto; }
+
+.app-nav {
+  max-width: 860px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.app-brand-mark {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+}
+.app-nav .back-link {
+  padding: 7px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.app-nav .back-link:hover { background: var(--primary-light); }
 
 .app-header {
   margin-bottom: 22px;
@@ -65,6 +100,15 @@ body {
   transition: color 0.15s;
 }
 .back-link:hover { color: var(--primary); }
+.back-link:focus-visible,
+.app-brand:focus-visible,
+.upload-zone:focus-visible,
+.btn:focus-visible,
+.input:focus-visible,
+.mode-btn:focus-visible {
+  outline: 3px solid rgba(79,70,229,0.32);
+  outline-offset: 2px;
+}
 
 /* ── Card ── */
 .card {
@@ -100,6 +144,7 @@ body {
   background: var(--surface-alt);
   user-select: none;
 }
+.upload-zone:focus-visible { border-color: var(--primary); }
 .upload-zone:hover,
 .upload-zone.drag-over {
   border-color: var(--primary);
@@ -188,6 +233,19 @@ body {
   font-size: 13px;
   color: var(--text-2);
 }
+.privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius);
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 12px;
+}
+.privacy-note strong { font-weight: 700; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
 .status-bar.is-loading .status-dot { background: var(--primary); animation: blink 1s infinite; }
 .status-bar.is-success .status-dot { background: var(--success); }
@@ -259,5 +317,14 @@ body {
 
 /* ── Responsive ── */
 @media (max-width: 560px) {
+  body { padding: 20px 12px 48px; }
+  .app-nav { margin-bottom: 18px; }
+  .app-header { align-items: stretch; }
+  .app-header .back-link { align-self: flex-start; }
+  .toolbar { align-items: stretch; }
+  .field-row { width: 100%; justify-content: space-between; }
+  .field-row .input { flex: 1; min-width: 0; }
+  .toolbar .btn { justify-content: center; flex: 1 1 auto; }
+  .privacy-note { font-size: 11.5px; }
   .toolbar-sep { display: none; }
 }

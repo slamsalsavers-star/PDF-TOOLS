@@ -109,6 +109,7 @@ h1 .arrow { color: var(--primary); font-weight: 500; }
   background: var(--surface);
   box-shadow: var(--shadow);
   overflow: hidden;
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .field { padding: 14px 16px; border-color: var(--border); }
@@ -178,7 +179,23 @@ h1 .arrow { color: var(--primary); font-weight: 500; }
 }
 .note b { color: var(--text); }
 
+/* Keep the layout renderer measurable without showing its staging pages. */
+.docx-render-host {
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  width: max-content;
+  min-height: 1px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.docx-render-host .docx-wrapper {
+  background: #fff;
+}
+
 @media (max-width: 620px) {
+  .settings { grid-template-columns: repeat(2, 1fr); }
   .masthead-top { flex-direction: column; gap: 8px; }
   .back-link { order: -1; }
 }

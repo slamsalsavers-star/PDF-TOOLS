@@ -14,19 +14,25 @@
 <body>
 <div class="app">
 
+  <nav class="app-nav" aria-label="PDF Tools navigation">
+    <a class="app-brand" href="index.html"><span class="app-brand-mark" aria-hidden="true">P</span><span>PDF Tools</span></a>
+    <a href="index.html" class="back-link">Back to all tools</a>
+  </nav>
+
+  <div class="privacy-note" role="note"><span aria-hidden="true">🔒</span><span><strong>Processed locally.</strong> Your PDF files stay in this browser and are not uploaded.</span></div>
+
   <header class="app-header">
     <div>
       <h1>PDF Merger</h1>
       <p>Combine multiple PDFs into one — entirely in your browser.</p>
     </div>
-    <a href="index.html" class="back-link">← Back to Hub</a>
   </header>
 
   <div class="card">
     <!-- Upload -->
     <div class="section">
       <input type="file" id="pdfFiles" accept="application/pdf" multiple style="display:none" />
-      <div class="upload-zone" id="uploadZone">
+      <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="Choose PDF files to merge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -63,7 +69,7 @@
       <div class="progress-wrap" id="progressWrap" style="display:none">
         <div class="progress-bar" id="progressBar"></div>
       </div>
-      <div class="status-bar" id="statusBar">
+      <div class="status-bar" id="statusBar" role="status" aria-live="polite">
         <div class="status-dot"></div>
         <span id="statusText">Add PDF files to begin.</span>
       </div>
@@ -94,7 +100,7 @@
 </div>
 
 <!-- Toasts -->
-<div id="toast-root"></div>
+<div id="toast-root" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script src="js/utils.js" defer></script>
 <script src="js/pdf-merger.js" defer></script>

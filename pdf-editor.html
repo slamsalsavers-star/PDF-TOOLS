@@ -15,6 +15,8 @@
 <body>
 <div class="app">
 
+  <div class="editor-privacy" role="note"><strong>Processed locally.</strong> Your PDF stays in this browser and is not uploaded.</div>
+
   <!-- ── Top bar ──────────────────────────────────────────────── -->
   <header class="topbar">
     <div class="topbar-left">
@@ -25,7 +27,7 @@
       <span class="app-name">PDF Editor</span>
       <span class="topbar-vsep"></span>
       <span class="status-dot"></span>
-      <span id="statusText" class="status-text">Open a PDF to begin.</span>
+      <span id="statusText" class="status-text" role="status" aria-live="polite">Open a PDF to begin.</span>
     </div>
 
     <div class="topbar-right">
@@ -100,7 +102,7 @@
       </div>
 
       <span class="topbar-vsep"></span>
-      <a href="index.html" class="back-link">← Hub</a>
+      <a href="index.html" class="back-link">Back to all tools</a>
     </div>
   </header>
 
@@ -808,7 +810,7 @@
   </div>
 </div>
 
-<div id="toast-root"></div>
+<div id="toast-root" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="js/pdf-editor.js" defer></script>
 </body>

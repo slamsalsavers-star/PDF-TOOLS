@@ -382,6 +382,9 @@ const uploadZone   = document.getElementById('uploadZone');
 const pdfFileInput = document.getElementById('pdfFile');
 
 uploadZone.addEventListener('click', () => pdfFileInput.click());
+uploadZone.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pdfFileInput.click(); }
+});
 pdfFileInput.addEventListener('change', () => {
   const f = pdfFileInput.files[0];
   if (f) $('#chosenFileName').text(f.name);

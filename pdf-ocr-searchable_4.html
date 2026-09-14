@@ -169,16 +169,20 @@
 <link rel="stylesheet" href="css/pdf-ocr.css">
 
 <div class="wrap">
+  <nav class="app-nav" aria-label="PDF Tools navigation">
+    <a class="app-brand" href="index.html"><span class="app-brand-mark" aria-hidden="true">P</span><span>PDF Tools</span></a>
+    <a href="index.html" class="back-link">Back to all tools</a>
+  </nav>
+
   <div class="masthead">
     <div class="masthead-top">
       <div>
         <p class="eyebrow">Optical character recognition</p>
         <h1>Make a scan <em>searchable</em></h1>
       </div>
-      <a href="index.html" class="back-link">← Back to Hub</a>
     </div>
     <p class="lede">Reads the words off scanned pages and layers them invisibly back onto the page, so the PDF looks identical but you can select, copy and search the text. Also exports clean Markdown for feeding to an AI.</p>
-    <div class="privacy"><b>Local only.</b> <span>Recognition runs in this browser — no page is uploaded anywhere.</span></div>
+    <div class="privacy"><b>Processed locally.</b> <span>Recognition runs in this browser. The language model downloads on first use.</span></div>
   </div>
 
   <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose PDF files to make searchable">
@@ -227,7 +231,7 @@
     </div>
   </div>
 
-  <div class="docket" id="docket"></div>
+  <div class="docket" id="docket" role="status" aria-live="polite" aria-atomic="false"></div>
 
   <div class="actions" id="actions" hidden>
     <button class="btn primary" id="runAll">Make searchable</button>
@@ -245,14 +249,14 @@
       <span><b></b> not processed yet</span>
     </div>
     <p style="margin-top:14px"><b>Markdown export:</b> alongside the searchable PDF you get a <b>.md</b> file with one section per page, headings, lists and tables recovered from the layout, and YAML front matter recording the source, page count and recognition confidence — the shape a language model reads best. Columns that aren't a solid grid are kept as aligned text rather than forced into a table, since a wrong header misleads more than plain lines do.</p>
-    <p style="margin-top:14px"><b>Worth knowing:</b> the first run downloads the recognition model for your chosen language (a few MB), so it takes a moment before the first page starts. Budget roughly 2–5 seconds per page. Long documents are built in batches to keep memory low, and are automatically read at a lower resolution — you can stop a run at any time and keep what's been done so far. Accuracy depends heavily on scan quality. Latin-alphabet languages only.</p>
+    <p style="margin-top:14px"><b>Worth knowing:</b> the first run downloads the recognition model for your chosen language (a few MB), so it takes a moment before the first page starts. Pages are read at a fixed high resolution and get a deskew + contrast pass before recognition, so this favours accuracy over speed — budget several seconds per page. Long documents are built in batches to keep memory low, and you can stop a run at any time and keep what's been done so far. Accuracy still depends heavily on scan quality. Latin-alphabet languages only.</p>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/7.0.0/tesseract.min.js"></script>
 
 <script>
 (function () {
@@ -264,6 +268,13 @@
   const MIN_CHARS_FOR_TEXT = 40;   // per page, to call it "already has text"
   const CHUNK_PAGES = 20;          // pages per intermediate PDF, keeps memory flat
   const CONF_FLOOR = 30;           // ignore words the recogniser isn't sure about
+
+  // Accuracy over speed: rasterise every page at a fixed high resolution for
+  // recognition rather than scaling it down on long documents. The embedded
+  // page image is a separate, independently-downsampled copy (see shrink()),
+  // so this doesn't inflate output file size — only recognition time/memory.
+  const OCR_DPI = 300;
+  const OCR_MAX_EDGE = 3600;
 
   let items = [], nextId = 1;
   let worker = null, workerLang = null, workerProgress = null;
@@ -476,6 +487,18 @@
       if (typeof wk.initialize === "function") await wk.initialize(lang);
     }
 
+    // Tesseract.js's own default page-segmentation mode is SINGLE_BLOCK ('6'),
+    // which assumes the image is one uniform block of text — wrong for full
+    // scanned pages with headers, paragraphs and columns. AUTO ('3') runs
+    // proper page layout analysis first. Sauvola thresholding ('2') computes
+    // a local threshold per pixel instead of one global Otsu cut, which reads
+    // scans with uneven lighting or a shaded background far more reliably —
+    // it costs meaningfully more time than Otsu, which is fine here since
+    // accuracy matters more than speed.
+    if (typeof wk.setParameters === "function") {
+      await wk.setParameters({ tessedit_pageseg_mode: "3", thresholding_method: "2" });
+    }
+
     worker = wk;
     workerLang = lang;
     return worker;
@@ -492,9 +515,8 @@
     const total = pdf.numPages;
     buildStrip(item, total);
 
-    // long documents get read at a lower resolution so the tab stays alive
-    const ocrDpi  = total > 150 ? 130 : total > 60 ? 150 : 200;
-    const maxEdge = total > 150 ? 2200 : total > 60 ? 2600 : 3200;
+    const ocrDpi  = OCR_DPI;
+    const maxEdge = OCR_MAX_EDGE;
     const canMerge = !!(window.PDFLib && window.PDFLib.PDFDocument);
     const chunkSize = canMerge ? CHUNK_PAGES : Infinity;
 
@@ -555,7 +577,12 @@
             else if (/load|initial/i.test(m.status || ""))
               status(item, p, total, started, "loading language model…");
           };
-          const result = await wk.recognize(canvas);
+          const ocrCanvas = preprocessForOcr(canvas);
+          // Tesseract.js 6+ only returns plain text by default; the word/line
+          // boxes the invisible text layer and Markdown layout need have to
+          // be requested explicitly.
+          const result = await wk.recognize(ocrCanvas, {}, { blocks: true });
+          if (ocrCanvas !== canvas) ocrCanvas.width = ocrCanvas.height = 0;
           workerProgress = null;
           layOcrText(doc, collectWords(result.data), wPt / canvas.width);
           allText.push((result.data && result.data.text) || "");
@@ -644,6 +671,129 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
     return canvas;
+  }
+
+  /* ---------------- OCR preprocessing ----------------
+     Feeds the recogniser a cleaned-up copy of the page: deskewed, converted
+     to grayscale and contrast-stretched. The embedded page image (shrink(),
+     above) stays untouched so the exported PDF still looks like the
+     original scan — only what Tesseract sees is enhanced. */
+
+  function preprocessForOcr(canvas) {
+    let working = canvas;
+    const angle = estimateSkew(canvas);
+    if (Math.abs(angle) >= 0.1) working = rotateCanvas(canvas, angle);
+    const enhanced = enhanceContrast(working);
+    if (working !== canvas) working.width = working.height = 0;
+    return enhanced;
+  }
+
+  // Classic projection-profile deskew: at the correct correction angle, rows
+  // of text pixels line up into sharp bands, which maximises the variance of
+  // the row histogram. Searched coarse-to-fine on a small grayscale copy so
+  // it stays cheap even on a 300dpi page.
+  function estimateSkew(canvas) {
+    const maxDim = 700;
+    const scale = Math.min(1, maxDim / Math.max(canvas.width, canvas.height));
+    const w = Math.max(1, Math.round(canvas.width * scale));
+    const h = Math.max(1, Math.round(canvas.height * scale));
+    if (w * h < 100) return 0;
+
+    const small = document.createElement("canvas");
+    small.width = w; small.height = h;
+    const sctx = small.getContext("2d", { alpha: false });
+    sctx.drawImage(canvas, 0, 0, w, h);
+    const data = sctx.getImageData(0, 0, w, h).data;
+
+    // collect the dark (likely text) pixels once; reused for every angle tried
+    let sum = 0, n = 0;
+    for (let i = 0; i < data.length; i += 4) { sum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114; n++; }
+    const mean = sum / n;
+    const threshold = mean * 0.85; // darker than the page average ~= ink
+
+    const xs = [], ys = [];
+    for (let y = 0, i = 0; y < h; y++) {
+      for (let x = 0; x < w; x++, i += 4) {
+        const g = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        if (g < threshold) { xs.push(x); ys.push(y); }
+      }
+    }
+    small.width = small.height = 0;
+    if (xs.length < 50 || xs.length > w * h * 0.6) return 0; // blank or inverted/noisy page — skip
+
+    const offset = Math.ceil(Math.sqrt(w * w + h * h));
+    const bins = new Float64Array(2 * offset + 1);
+
+    const score = (deg) => {
+      const theta = deg * Math.PI / 180;
+      const sin = Math.sin(theta), cos = Math.cos(theta);
+      bins.fill(0);
+      for (let k = 0; k < xs.length; k++) {
+        const idx = Math.round(xs[k] * sin + ys[k] * cos) + offset;
+        if (idx >= 0 && idx < bins.length) bins[idx]++;
+      }
+      let s = 0, sq = 0;
+      for (let i = 0; i < bins.length; i++) { s += bins[i]; sq += bins[i] * bins[i]; }
+      const m = s / bins.length;
+      return sq / bins.length - m * m;
+    };
+
+    let best = 0, bestScore = -Infinity;
+    for (let deg = -5; deg <= 5; deg += 0.5) {
+      const s = score(deg);
+      if (s > bestScore) { bestScore = s; best = deg; }
+    }
+    for (let deg = best - 0.5; deg <= best + 0.5; deg += 0.1) {
+      const s = score(deg);
+      if (s > bestScore) { bestScore = s; best = deg; }
+    }
+    return best;
+  }
+
+  function rotateCanvas(src, angleDeg) {
+    const rad = angleDeg * Math.PI / 180;
+    const out = document.createElement("canvas");
+    out.width = src.width; out.height = src.height;
+    const ctx = out.getContext("2d", { alpha: false });
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.translate(out.width / 2, out.height / 2);
+    ctx.rotate(rad);
+    ctx.drawImage(src, -src.width / 2, -src.height / 2);
+    return out;
+  }
+
+  // Grayscale + percentile contrast stretch ("auto levels"). Corrects faded
+  // or unevenly-lit scans without hard-binarising, which the LSTM recogniser
+  // (unlike the old Tesseract engine) does not need and can do better itself.
+  function enhanceContrast(src) {
+    const out = document.createElement("canvas");
+    out.width = src.width; out.height = src.height;
+    const ctx = out.getContext("2d", { alpha: false });
+    ctx.drawImage(src, 0, 0);
+    const imgData = ctx.getImageData(0, 0, out.width, out.height);
+    const d = imgData.data;
+    const n = d.length / 4;
+    const gray = new Uint8ClampedArray(n);
+    const hist = new Uint32Array(256);
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const g = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0;
+      gray[j] = g; hist[g]++;
+    }
+    const lowCut = n * 0.01, highCut = n * 0.01;
+    let cum = 0, lo = 0, hi = 255;
+    for (let v = 0; v < 256; v++) { cum += hist[v]; if (cum >= lowCut) { lo = v; break; } }
+    cum = 0;
+    for (let v = 255; v >= 0; v--) { cum += hist[v]; if (cum >= highCut) { hi = v; break; } }
+    if (hi <= lo) { lo = 0; hi = 255; }
+    const range = hi - lo;
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      let v = (gray[j] - lo) * 255 / range;
+      v = v < 0 ? 0 : v > 255 ? 255 : v;
+      d[i] = d[i + 1] = d[i + 2] = v;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return out;
   }
 
   function shrink(canvas, widthPt, dpi) {

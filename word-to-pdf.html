@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Word to PDF — batch converter</title>
@@ -200,18 +203,24 @@
 </style>
 <link rel="stylesheet" href="css/shared.css">
 <link rel="stylesheet" href="css/word-to-pdf.css">
+</head>
+<body>
 
 <div class="wrap">
+  <nav class="app-nav" aria-label="PDF Tools navigation">
+    <a class="app-brand" href="index.html"><span class="app-brand-mark" aria-hidden="true">P</span><span>PDF Tools</span></a>
+    <a href="index.html" class="back-link">Back to all tools</a>
+  </nav>
+
   <div class="masthead">
     <div class="masthead-top">
       <div>
         <p class="eyebrow">Batch document converter</p>
         <h1>Word <span class="arrow">&rarr;</span> PDF</h1>
       </div>
-      <a href="index.html" class="back-link">← Back to Hub</a>
     </div>
-    <p class="lede">Drop in as many <code>.docx</code> files as you like. Each one comes back as a PDF with real, selectable text — not a screenshot of a page.</p>
-    <div class="privacy"><b>Local only.</b> <span>Your files are read in this browser and never uploaded.</span></div>
+    <p class="lede">Drop in as many <code>.docx</code> files as you like. Choose layout fidelity for the closest visual match, or selectable text for searchable, editable text.</p>
+    <div class="privacy"><b>Processed locally.</b> <span>Your files are read in this browser and are not uploaded.</span></div>
   </div>
 
   <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose Word files to convert">
@@ -250,6 +259,13 @@
         <option value="no">Hide</option>
       </select>
     </div>
+    <div class="field">
+      <label for="renderMode">Rendering</label>
+      <select id="renderMode">
+        <option value="layout" selected>Layout fidelity</option>
+        <option value="text">Selectable text</option>
+      </select>
+    </div>
   </div>
 
   <div class="docket" id="docket"></div>
@@ -261,12 +277,14 @@
     <span class="count" id="count"></span>
   </div>
 
-  <p class="note"><b>Good to know:</b> headings, bold and italic text, lists, tables, images and links all carry over. Older <code>.doc</code> files need to be saved as <code>.docx</code> first, and text uses the Latin alphabet — scripts like Devanagari, Chinese or Arabic won't render with the built-in PDF fonts.</p>
+  <p class="note"><b>Good to know:</b> Layout fidelity preserves Word pages, tables, images, columns and spacing most closely, but the PDF text is image-based. Selectable text keeps searchable text and basic formatting, but complex page layout may shift. Older <code>.doc</code> files need to be saved as <code>.docx</code> first.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/docx-preview@0.3.3/dist/docx-preview.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 (function () {
@@ -432,7 +450,8 @@
       format: $("pageSize").value,
       margin: parseFloat($("margin").value),
       font: $("font").value,
-      pageNumbers: $("pageNums").value === "yes"
+      pageNumbers: $("pageNums").value === "yes",
+      renderMode: $("renderMode").value
     };
   }
 
@@ -445,6 +464,11 @@
       throw new Error("Converter libraries didn't load — check your connection and reload");
 
     const arrayBuffer = await file.arrayBuffer();
+
+    if (opts.renderMode === "layout") {
+      return convertLayout(arrayBuffer, opts);
+    }
+
     let html;
     try {
       html = (await mammoth.convertToHtml({ arrayBuffer })).value;
@@ -470,6 +494,64 @@
       : "";
 
     return { blob: doc.output("blob"), pages: doc.internal.getNumberOfPages(), warning };
+  }
+
+  async function convertLayout(arrayBuffer, opts) {
+    if (!window.docx || typeof html2canvas === "undefined")
+      throw new Error("Layout renderer didn't load — check your connection and reload");
+
+    const host = document.createElement("div");
+    host.className = "docx-render-host";
+    document.body.appendChild(host);
+
+    try {
+      await window.docx.renderAsync(arrayBuffer, host, null, {
+        breakPages: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        useBase64URL: true,
+        experimental: true
+      });
+
+      const sections = Array.from(host.querySelectorAll("section.docx"));
+      if (!sections.length) throw new Error("No Word pages were found in this document");
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: opts.format, compress: true });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+        const canvas = await html2canvas(section, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+        if (i > 0) doc.addPage();
+
+        const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+        const width = canvas.width * ratio;
+        const height = canvas.height * ratio;
+        doc.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", (pageW - width) / 2, (pageH - height) / 2, width, height, undefined, "FAST");
+      }
+
+      if (opts.pageNumbers) {
+        const total = doc.internal.getNumberOfPages();
+        doc.setFont(opts.font, "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(140, 148, 168);
+        for (let page = 1; page <= total; page++) {
+          doc.setPage(page);
+          doc.text(String(page), pageW / 2, pageH - 14, { align: "center" });
+        }
+      }
+
+      return { blob: doc.output("blob"), pages: sections.length, warning: "Layout preserved; text is image-based" };
+    } finally {
+      host.remove();
+    }
   }
 
   function preloadImages(host) {
@@ -744,3 +826,6 @@
   }
 })();
 </script>
+
+</body>
+</html>

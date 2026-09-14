@@ -35,6 +35,15 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+.editor-privacy {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  background: #ecfdf5;
+  border-bottom: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 11px;
+}
+.editor-privacy strong { font-weight: 700; }
 
 /* =====================
    TOP BAR

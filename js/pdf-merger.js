@@ -254,6 +254,9 @@ const uploadZone    = document.getElementById('uploadZone');
 const pdfFilesInput = document.getElementById('pdfFiles');
 
 uploadZone.addEventListener('click', () => pdfFilesInput.click());
+uploadZone.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pdfFilesInput.click(); }
+});
 pdfFilesInput.addEventListener('change', () => handleFiles(pdfFilesInput.files));
 
 uploadZone.addEventListener('dragover', e => {

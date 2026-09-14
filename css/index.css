@@ -463,6 +463,33 @@ body {
 ═══════════════════════════════════════════ */
 .tools-section { background: var(--bg); }
 
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 0 0 48px;
+}
+.workflow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--dark);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.workflow:hover { border-color: rgba(5,150,105,.35); transform: translateY(-2px); box-shadow: var(--shadow); }
+.workflow-number { color: var(--green-600); font-size: .75rem; font-weight: 800; letter-spacing: .08em; }
+.workflow strong { display: block; font-size: .9rem; margin-bottom: 4px; }
+.workflow small { display: block; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+.workflow-arrow { color: var(--green-600); font-size: 1.2rem; }
+
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1103,6 +1130,10 @@ textarea { min-height: 130px; resize: vertical; line-height: 1.7; }
 }
 
 @media (max-width: 600px) {
+  .nav-inner { padding: 0 20px; }
+  .nav-links { display: flex; position: static; flex-direction: row; padding: 0; border: 0; background: transparent; gap: 0; }
+  .nav-links a { padding: 6px 8px; font-size: .78rem; }
+  .workflow-grid { grid-template-columns: 1fr; margin-bottom: 36px; }
   .section-wrap { padding: 64px 20px; }
   .stats-inner { gap: 0; }
   .stat-item { padding: 8px 20px; }
